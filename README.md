@@ -76,5 +76,8 @@ webpack.config.js
 
 ## Run with:
 
-`npm start`
-`npm run hotloader`
+```
+npm start
+npm run hotloader
+ngrok http --domain=rational-sawfish-loosely.ngrok-free.app 5050 --host-header="localhost:5050"
+```
