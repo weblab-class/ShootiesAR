@@ -1,4 +1,11 @@
+import { BehaviorSubject } from "rxjs";
+import GameManager from "../gamelogic/GameManager";
+import GameStateSerialized from "../serialized/GameStateSerialized";
+import { GAME_CLOCK } from "./server-socket";
+
 export default class Lobby {
+  public readonly gameState: BehaviorSubject<GameStateSerialized | null>;
+
   public readonly code: string; // the code that a user can type in to join this room
   public players: string[]; // socket IDs
   public locked: boolean; // whether players are allowed to join/leave still
@@ -6,11 +13,15 @@ export default class Lobby {
 
   private static lobbyCounter = 0;
 
+  public gameManager: GameManager | null;
+
   public constructor(maxPlayers = 4) {
     this.code = this.generateUniqueLobbyCode();
     this.players = [];
     this.locked = false;
     this.maxPlayers = maxPlayers;
+    this.gameManager = null;
+    this.gameState = new BehaviorSubject<GameStateSerialized | null>(null);
   }
 
   public join(socketId: string) {
@@ -31,6 +42,24 @@ export default class Lobby {
     } else {
       throw new Error(`SocketId ${socketId} not found in player list ${this.players}`);
     }
+  }
+
+  public startGame() {
+    if (this.gameManager) {
+      return; // game was already started
+    }
+    this.locked = true;
+    this.gameManager = new GameManager(this.players);
+    this.gameManager.gameState.subscribe((update) => {
+      this.gameState.next(update);
+    });
+    this.gameManager.gameOver.subscribe((isGameOver) => {
+      if (isGameOver) {
+        this.gameState.next(null);
+        this.gameManager?.gameState.unsubscribe();
+        this.gameManager?.gameOver.unsubscribe();
+      }
+    })
   }
 
   private generateUniqueLobbyCode(): string {
