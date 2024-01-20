@@ -1,6 +1,6 @@
 import express from "express";
 import auth from "./auth";
-import socketManager from "./sockets/server-socket";
+import socketManager from "./server-socket";
 const router = express.Router();
 
 router.post("/login", auth.login);

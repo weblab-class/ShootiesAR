@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import Enemy from "../gameclasses/Enemy";
+import Enemy from "./Enemy";
 import { BehaviorSubject, Observable } from "rxjs";
 
 const ENEMY_SPAWN_PERIOD_MS = 5000;

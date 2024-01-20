@@ -1,11 +1,11 @@
 import { Vector3 } from "three";
-import Player from "../gameclasses/Player";
+import Player from "./Player";
 import EnemySpawner from "./EnemySpawner";
-import { GAME_CLOCK } from "../sockets/server-socket";
-import PlayerSerialized from "../serialized/PlayerSerialized";
+import { GAME_CLOCK } from "./server-socket";
+import PlayerSerialized from "./PlayerSerialized";
 import { BehaviorSubject } from "rxjs";
-import GameStateSerialized from "../serialized/GameStateSerialized";
-import EnemySerialized from "../serialized/EnemySerialized";
+import GameStateSerialized from "./GameStateSerialized";
+import EnemySerialized from "./EnemySerialized";
 
 export default class GameManager {
   public readonly gameState: BehaviorSubject<GameStateSerialized>;

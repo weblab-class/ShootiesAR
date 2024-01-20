@@ -1,10 +1,10 @@
 import type http from "http";
 import { Server, Socket } from "socket.io";
-import User from "../../shared/User";
+import User from "../shared/User";
 import { interval, map } from "rxjs";
-import GameManager from "../gamelogic/GameManager";
+import GameManager from "./GameManager";
 import Lobby from "./Lobby";
-import PlayerSerialized from "../serialized/PlayerSerialized";
+import PlayerSerialized from "./PlayerSerialized";
 
 const FRAME_RATE = 60;
 

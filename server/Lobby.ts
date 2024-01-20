@@ -1,6 +1,6 @@
 import { BehaviorSubject } from "rxjs";
-import GameManager from "../gamelogic/GameManager";
-import GameStateSerialized from "../serialized/GameStateSerialized";
+import GameManager from "./GameManager";
+import GameStateSerialized from "./GameStateSerialized";
 import { GAME_CLOCK } from "./server-socket";
 
 export default class Lobby {
