@@ -111,7 +111,7 @@ export const init = (server: http.Server): void => {
     GAME_CLOCK.subscribe(() => {
       const lobby = getLobby(socket);
       if (lobby && lobby.gameManager) {
-        io.to(`lobby-${lobby.code}`).emit(JSON.stringify(lobby.gameManager.gameState.value));
+        io.to(`lobby-${lobby.code}`).emit("gameState", lobby.gameManager.gameState.value);
       }
     });
   });
