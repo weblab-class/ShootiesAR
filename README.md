@@ -81,3 +81,7 @@ npm start
 npm run hotloader
 ngrok http --domain=rational-sawfish-loosely.ngrok-free.app 5050 --host-header="localhost:5050"
 ```
+
+## Asset Credits:
+
+crosshair: https://www.pngall.com/crosshair-png/download/123527

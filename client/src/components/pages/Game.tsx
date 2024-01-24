@@ -5,12 +5,17 @@ import { RouteComponentProps } from "@reach/router";
 import Scene from "../renders/Scene";
 
 type Props = RouteComponentProps & {
-  userId?: string;
+  userId?: string | undefined;
 };
 
 const Game = (props: Props) => {
   return (
-    <Scene />
+    <>
+      {props.userId 
+        ? (<Scene userId={props.userId}/>)
+        : (<p>loading...</p>)
+      }
+    </>
   )
 }
 

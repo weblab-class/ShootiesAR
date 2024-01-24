@@ -1,5 +1,5 @@
 type PlayerSerialized = {
-  socketId: string;
+  userId: string;
   position: {
     x: number,
     y: number,

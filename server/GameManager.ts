@@ -23,13 +23,11 @@ export default class GameManager {
     }
 
     this.gameState = new BehaviorSubject<GameStateSerialized>(this.serializeGameState());
-  }
 
-  public startGame() {
     setTimeout(() => {
       this.enemySpawner.startWave();
-    }, 10000);
-
+    }, 0); // 10000
+  
     GAME_CLOCK.subscribe(() => {
       this.gameState.next(this.serializeGameState());
     });
@@ -47,7 +45,7 @@ export default class GameManager {
     const playersSerialized: PlayerSerialized[] = [];
     for (const [id, player] of this.players.entries()) {
       playersSerialized.push({
-        socketId: id,
+        userId: id,
         position: {
           x: player.position.x,
           y: player.position.y,
@@ -62,7 +60,7 @@ export default class GameManager {
     }
 
     const enemiesSerialized: EnemySerialized[] = [];
-    for (const [id, enemy] of this.enemySpawner.currentEnemies.entries()) {
+    for (const [id, enemy] of this.enemySpawner.enemies.value.entries()) {
       enemiesSerialized.push({
         id: id,
         position: {

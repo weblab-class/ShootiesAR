@@ -23,6 +23,24 @@
   transform: translate(-50%,-50%);
 }
 
+.center-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* 100% of viewport height */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* z-index: 999; Make sure it appears over other elements */
+}
+
+#crosshair {
+  width: 100px;
+  height: 100px;
+}
+
 /* the below hides annoying pause button on ios: 
   https://stackoverflow.com/questions/74631687/hide-play-button-overlay-on-html5-video-on-mobile */
 

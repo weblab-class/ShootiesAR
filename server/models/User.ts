@@ -3,11 +3,13 @@ import { Schema, model, Document } from "mongoose";
 const UserSchema = new Schema({
   name: String,
   googleid: String,
+  coins: Number,
 });
 
 export interface User extends Document {
   name: string;
   googleid: string;
+  coins: number;
   _id: string;
 }
 
