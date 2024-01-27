@@ -25,8 +25,6 @@ const App = () => {
 
   const [coins, setCoins] = useState<number>(0);
 
-  useEffect(() => console.log("re-rendering page"))
-
   // page first load
   useEffect(() => {
     get("/api/whoami")

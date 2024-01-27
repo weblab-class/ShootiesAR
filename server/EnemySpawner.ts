@@ -2,7 +2,7 @@ import { Vector3 } from "three";
 import Enemy from "./Enemy";
 import { BehaviorSubject, Observable } from "rxjs";
 
-const ENEMY_SPAWN_PERIOD_MS = 1000;
+const ENEMY_SPAWN_PERIOD_MS = 5000;
 
 export default class EnemySpawner {
   public readonly enemies: BehaviorSubject<Enemy[]>;
@@ -27,18 +27,14 @@ export default class EnemySpawner {
   }
 
   public spawnEnemy(): Enemy {
-    const newEnemy = new Enemy((id) => this.despawnEnemy(id), new Vector3(50*Math.random()-25, 3*Math.random(), -10*Math.random()+10));
+    const newEnemy = new Enemy((id) => this.despawnEnemy(id), new Vector3(10*Math.random()-5, 3*Math.random(), -10*Math.random()-10));
     this.enemies.next(this.enemies.value.concat([newEnemy]));
     return newEnemy;
   }
 
   public despawnEnemy(id: number) {
-    console.log(this);
-    console.log(this.enemies);
     if (this.enemies.value.some(enemy => enemy.id === id)) {
-      console.log("enemy should be despawning")
       this.enemies.next(this.enemies.value.filter(enemy => enemy.id !== id));
-      console.log(this.enemies.value);
     } else {
       console.error(`ID ${id} not found in enemy array ${this.enemies.value}`);
     }

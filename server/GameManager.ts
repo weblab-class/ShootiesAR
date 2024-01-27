@@ -43,25 +43,16 @@ export default class GameManager {
     const yaw = player.rotation.y;
     const dir = new Vector3(
       -Math.sin(yaw)*Math.cos(pitch),
-      -Math.sin(pitch),
+      Math.sin(pitch),
       -Math.cos(yaw)*Math.cos(pitch),
     );
     
     // compute discriminant to check if there is an intersection
-    // console.log(this.enemySpawner.enemies.value)
     for (const enemy of this.enemySpawner.enemies.value) {
-      console.log("player pos:", player.position);
-      console.log("player rot:", player.rotation);
-      console.log("player dir:", dir);
-      console.log("enemy pos:", enemy.position);
       const P_MINUS_C = player.position.sub(enemy.position);
-      console.log("P-C", P_MINUS_C);
       const a: number = dir.dot(dir);
       const b: number = 2 * dir.dot(P_MINUS_C);
       const c: number = P_MINUS_C.dot(P_MINUS_C) - enemy.hitboxRadius;
-      console.log("a:", a)
-      console.log("b:", b)
-      console.log("c:", c)
       if (b*b - 4*a*c < 0) {
         continue;
       }

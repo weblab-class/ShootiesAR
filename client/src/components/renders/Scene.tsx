@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./Scene.css";
 import { socket } from "../../client-socket";
 import { PlayerSerialized, EnemySerialized, GameStateSerialized } from "../../../../shared/serialized";
@@ -38,32 +38,58 @@ const Scene = (props: Props) => {
     players: new Map<string, HTMLElement>(),
     enemies: new Map<number, HTMLElement>(),
   });
-
+  
   const newPlayerElement = () => {
     const player = document.createElement("a-entity");
-
+    
     const cone1 = document.createElement("a-cone");
     cone1.setAttribute("color", "green");
     cone1.setAttribute("radius-bottom", "0.5");
     cone1.object3D.rotation.x -= Math.PI / 2;
     player.appendChild(cone1);
-
+    
     return player;
   }
-
+  
   const newEnemyElement = () => {
     const enemy = document.createElement("a-entity");
-
+    
     const box1 = document.createElement("a-box");
     box1.setAttribute("color", "red");
     enemy.appendChild(box1);
-
+    
     return enemy;
   }
-
+  
   useEffect(() => {
     document.addEventListener("click", () => socket.emit("shoot"));
-  }, [])
+  }, []);
+
+  const deviceVel = useRef({x:0, y:0, z:0});
+  const timeOfLastMotionEvent = useRef(new Date());
+
+  const [p, setP] = useState({x:-1, y:0, z:0});
+  
+  useEffect(() => {
+    window.addEventListener("devicemotion", (event) => {
+      // update camera position based on detected phone acceleration
+      const accel = event.acceleration;
+      const pos = gameCamRef.current.object3D.position;
+      const currentTime = new Date();
+      const dt = (currentTime.getTime() - timeOfLastMotionEvent.current.getTime()) / 1000;
+      if (accel.x*accel.x + accel.y*accel.y + accel.z*accel.z < .5) {
+          deviceVel.current = {x:0, y:0, z:0};
+      }
+      deviceVel.current.x += accel.x * dt;
+      deviceVel.current.y += accel.y * dt;
+      deviceVel.current.z += accel.z * dt;
+      pos.x += deviceVel.current.x * dt;
+      pos.y += deviceVel.current.y * dt;
+      pos.z += deviceVel.current.z * dt;
+      timeOfLastMotionEvent.current = currentTime;
+      setP({x:pos.x, y:pos.y, z:pos.z})
+    })
+  }, []);
 
   useEffect(() => {
     socket.on("gameState", (gameState: GameStateSerialized) => {
@@ -126,19 +152,26 @@ const Scene = (props: Props) => {
     })
   }, []);
     
-    return (
-      <>
+  return (
+    <>
       <div className="video-container">
         <video ref={cameraFeedRef} playsInline autoPlay muted></video>
       </div>
       <a-scene xr-mode-ui="enabled: false">
-        <a-camera ref={gameCamRef} camera="fov: 80;" id="camera" rotation-reader position="0 1.6 0" listener look-controls="reverseMouseDrag:true; touchEnabled: false"></a-camera>
+        <a-assets>
+          <img id="crosshair" src={crosshairImg} />
+        </a-assets>
+        <a-camera ref={gameCamRef} camera="fov: 80;" id="camera" rotation-reader position="0 1.6 0" listener look-controls="reverseMouseDrag:true; touchEnabled: false">
+          {/* HUD */}
+          <a-image src="#crosshair" position="0 0 -1" width=".2" height=".2"></a-image>
+        </a-camera>
         <a-entity ref={enemiesRef} id="enemies"></a-entity>
         <a-entity ref={alliesRef} id="allies"></a-entity>
       </a-scene>
-      <div className="center-container">
+      {/* <div className="center-container">
         <img id="crosshair" src={crosshairImg} />
-      </div>
+        <p>{`dt: ${((new Date()).getTime() - timeOfLastMotionEvent.current.getTime())/1000} x: ${p.x.toPrecision(3)}\ny: ${p.y.toPrecision(3)}\nz: ${p.z.toPrecision(3)}`}</p>
+      </div> */}
     </>
   );
 }
