@@ -6,6 +6,6 @@ export default class Player {
 
   constructor(pos?: Vector3, rot?: Euler) {
     this.position = pos ?? new Vector3();
-    this.rotation = rot ?? new Euler();
+    this.rotation = rot ?? new Euler(0, 0, 0, "YXZ");
   }
 }

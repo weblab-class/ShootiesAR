@@ -39,61 +39,95 @@ const Scene = (props: Props) => {
     enemies: new Map<number, HTMLElement>(),
   });
 
-  socket.on("gameState", (gameState: GameStateSerialized) => {
-    console.log(entities)
+  const newPlayerElement = () => {
+    const player = document.createElement("a-entity");
 
-    gameState.players.forEach((player: PlayerSerialized) => {
-      if (!entities.current.players.has(player.userId)) {
-        if (props.userId === player.userId) {
-          gameCamRef.current.object3D.position.set(player.position.x, player.position.y, player.position.z);
-          return;
+    const cone1 = document.createElement("a-cone");
+    cone1.setAttribute("color", "green");
+    cone1.setAttribute("radius-bottom", "0.5");
+    cone1.object3D.rotation.x -= Math.PI / 2;
+    player.appendChild(cone1);
+
+    return player;
+  }
+
+  const newEnemyElement = () => {
+    const enemy = document.createElement("a-entity");
+
+    const box1 = document.createElement("a-box");
+    box1.setAttribute("color", "red");
+    enemy.appendChild(box1);
+
+    return enemy;
+  }
+
+  useEffect(() => {
+    document.addEventListener("click", () => socket.emit("shoot"));
+  }, [])
+
+  useEffect(() => {
+    socket.on("gameState", (gameState: GameStateSerialized) => {
+      // console.log("clientPos:", gameCamRef.current.object3D.position);
+      // console.log("clientRot:", gameCamRef.current.object3D.rotation);
+      // console.log("server:", gameState.players.filter((p) => p.userId === props.userId));
+
+      socket.emit("playerUpdate", {
+        position: gameCamRef.current.object3D.position,
+        rotation: {
+          x: gameCamRef.current.object3D.rotation.x,
+          y: gameCamRef.current.object3D.rotation.y,
+          z: gameCamRef.current.object3D.rotation.z,
+        },
+      });
+      
+      gameState.players.forEach((player: PlayerSerialized) => {
+        if (!entities.current.players.has(player.userId)) {
+          if (props.userId === player.userId) {
+            gameCamRef.current.object3D.position.set(player.position.x, player.position.y, player.position.z);
+            entities.current.players.set(player.userId, null);
+            return;
+          }
+          const newPlayer = newPlayerElement();
+          entities.current.players.set(player.userId, newPlayer);
+          newPlayer.setAttribute("position", player.position);
+          newPlayer.setAttribute("rotation", player.rotation);
+          alliesRef.current.appendChild(newPlayer);
         }
-        const newPlayer = document.createElement("a-box");
-        entities.current.players.set(player.userId, newPlayer);
-        newPlayer.setAttribute("color", "green");
-        newPlayer.setAttribute("position", player.position);
-        newPlayer.setAttribute("rotation", player.rotation);
-        alliesRef.current.appendChild(newPlayer);
+      });
+      
+      gameState.enemies.forEach((enemy: EnemySerialized) => {
+        if (!entities.current.enemies.has(enemy.id)) {
+          const newEnemy = newEnemyElement();
+          entities.current.enemies.set(enemy.id, newEnemy);
+          newEnemy.setAttribute("position", enemy.position);
+          enemiesRef.current.appendChild(newEnemy);
+        }
+      });
+
+      for (const [enemyId, enemy] of entities.current.enemies.entries()) {
+        if (!gameState.enemies.some(e => e.id === enemyId)) {
+          entities.current.enemies.delete(enemyId);
+          enemiesRef.current.removeChild(enemy);
+        }
       }
-    });
-
-    const seenEnemies: Array<number> = new Array<number>();
-
-    gameState.enemies.forEach((enemy: EnemySerialized) => {
-      seenEnemies.push(enemy.id);
-      if (!entities.current.enemies.has(enemy.id)) {
-        const newEnemy = document.createElement("a-box");
-        entities.current.enemies.set(enemy.id, newEnemy);
-        newEnemy.setAttribute("color", "red");
-        newEnemy.setAttribute("position", enemy.position);
-        enemiesRef.current.appendChild(newEnemy);
-      }
-    });
-
-    seenEnemies.forEach((enemyId) => {
-      if (!gameState.enemies.some(e => e.id === enemyId)) {
-        const enemyToRemove = entities.current.enemies.get(enemyId);
-        entities.current.enemies.delete(enemyId);
-        enemiesRef.current.removeChild(enemyToRemove);
-      }
-    });
-
-    // update all data
-    gameState.players.forEach((player: PlayerSerialized) => {
-      if (player.userId === props.userId) {
-        return; // let this player update itself based on phone movement
-      }
-      entities.current.players.get(player.userId).object3D.position.set(player.position.x, player.position.y, player.position.z);
-      entities.current.players.get(player.userId).object3D.rotation.set(player.rotation.x, player.rotation.y, player.rotation.z);
-    });
-
-    gameState.enemies.forEach(enemy => {
-      entities.current.enemies.get(enemy.id).object3D.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
-    });
-  })
-
-  return (
-    <>
+      
+      // update all data
+      gameState.players.forEach((player: PlayerSerialized) => {
+        if (player.userId === props.userId) {
+          return; // let this player update itself based on phone movement
+        }
+        entities.current.players.get(player.userId).object3D.position.set(player.position.x, player.position.y, player.position.z);
+        entities.current.players.get(player.userId).object3D.rotation.set(player.rotation.x, player.rotation.y, player.rotation.z);
+      });
+      
+      gameState.enemies.forEach(enemy => {
+        entities.current.enemies.get(enemy.id).object3D.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
+      });
+    })
+  }, []);
+    
+    return (
+      <>
       <div className="video-container">
         <video ref={cameraFeedRef} playsInline autoPlay muted></video>
       </div>

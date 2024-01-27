@@ -23,6 +23,8 @@
   transform: translate(-50%,-50%);
 }
 
+/* for centering crosshair */
+
 .center-container {
   display: flex;
   align-items: center;

@@ -33,14 +33,56 @@ export default class GameManager {
     });
   }
 
-  public shoot(player: string) {
+  public shoot(playerId: string) {
+    const player = this.players.get(playerId);
+    if (!player) {
+      return;
+    }
+    // convert player direction euler coordinates to a normalized direction vector
+    const pitch = player.rotation.x;
+    const yaw = player.rotation.y;
+    const dir = new Vector3(
+      -Math.sin(yaw)*Math.cos(pitch),
+      -Math.sin(pitch),
+      -Math.cos(yaw)*Math.cos(pitch),
+    );
     
+    // compute discriminant to check if there is an intersection
+    // console.log(this.enemySpawner.enemies.value)
+    for (const enemy of this.enemySpawner.enemies.value) {
+      console.log("player pos:", player.position);
+      console.log("player rot:", player.rotation);
+      console.log("player dir:", dir);
+      console.log("enemy pos:", enemy.position);
+      const P_MINUS_C = player.position.sub(enemy.position);
+      console.log("P-C", P_MINUS_C);
+      const a: number = dir.dot(dir);
+      const b: number = 2 * dir.dot(P_MINUS_C);
+      const c: number = P_MINUS_C.dot(P_MINUS_C) - enemy.hitboxRadius;
+      console.log("a:", a)
+      console.log("b:", b)
+      console.log("c:", c)
+      if (b*b - 4*a*c < 0) {
+        continue;
+      }
+      // todo: make sure enemy is in front of player
+      enemy.takeDamage(1);
+    }
   }
 
-  public playerUpdate(player: string, playerData: PlayerSerialized) {
-
+  public playerUpdate(playerId: string, playerData: PlayerSerialized) {
+    const player = this.players.get(playerId);
+    if (!player) {
+      return;
+    }
+    player.position.x = playerData.position.x;
+    player.position.y = playerData.position.y;
+    player.position.z = playerData.position.z;
+    player.rotation.x = playerData.rotation.x;
+    player.rotation.y = playerData.rotation.y;
+    player.rotation.z = playerData.rotation.z;
   }
-
+  
   private serializeGameState(): GameStateSerialized  {
     const playersSerialized: PlayerSerialized[] = [];
     for (const [id, player] of this.players.entries()) {

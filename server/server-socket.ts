@@ -95,7 +95,7 @@ export const init = (server: http.Server): void => {
       })
 
       GAME_CLOCK.subscribe(() => {
-        console.log(newLobby.gameState.value)
+        // console.log(newLobby.gameState.value?.players)
         io.to(`lobby-${newLobby.code}`).emit("gameState", newLobby.gameState.value);
       });
     });
