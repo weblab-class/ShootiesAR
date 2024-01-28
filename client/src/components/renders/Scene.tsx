@@ -6,6 +6,7 @@ import "./Scene.css";
 import { socket } from "../../client-socket";
 import { PlayerSerialized, EnemySerialized, GameStateSerialized } from "../../../../shared/serialized";
 import crosshairImg from "../../public/assets/crosshair.png";
+import { Subject } from "rxjs";
 
 // we want to update our scene directly through the DOM, since React re-renders are much slower
 // so we want to minimize usage of props since they trigger re-renders
@@ -33,11 +34,14 @@ const Scene = (props: Props) => {
   const gameCamRef = useRef();
   const enemiesRef = useRef();
   const alliesRef = useRef();
+  const graphicsRef = useRef();
 
   const entities = useRef({
     players: new Map<string, HTMLElement>(),
     enemies: new Map<number, HTMLElement>(),
   });
+  
+  const beamGraphics = useRef(new Array<HTMLElement>());
   
   const newPlayerElement = () => {
     const player = document.createElement("a-entity");
@@ -73,29 +77,34 @@ const Scene = (props: Props) => {
   useEffect(() => {
     window.addEventListener("devicemotion", (event) => {
       // update camera position based on detected phone acceleration
-      const accel = event.acceleration;
-      const pos = gameCamRef.current.object3D.position;
-      const currentTime = new Date();
-      const dt = (currentTime.getTime() - timeOfLastMotionEvent.current.getTime()) / 1000;
-      if (accel.x*accel.x + accel.y*accel.y + accel.z*accel.z < .5) {
-          deviceVel.current = {x:0, y:0, z:0};
-      }
-      deviceVel.current.x += accel.x * dt;
-      deviceVel.current.y += accel.y * dt;
-      deviceVel.current.z += accel.z * dt;
-      pos.x += deviceVel.current.x * dt;
-      pos.y += deviceVel.current.y * dt;
-      pos.z += deviceVel.current.z * dt;
-      timeOfLastMotionEvent.current = currentTime;
-      setP({x:pos.x, y:pos.y, z:pos.z})
+      // const accel = event.acceleration;
+      // const pos = gameCamRef.current.object3D.position;
+      // const currentTime = new Date();
+      // const dt = (currentTime.getTime() - timeOfLastMotionEvent.current.getTime()) / 1000;
+      // if (accel.x*accel.x + accel.y*accel.y + accel.z*accel.z < .5) {
+      //     deviceVel.current = {x:0, y:0, z:0};
+      // }
+      // deviceVel.current.x += accel.x * dt;
+      // deviceVel.current.y += accel.y * dt;
+      // deviceVel.current.z += accel.z * dt;
+      // pos.x += deviceVel.current.x * dt;
+      // pos.y += deviceVel.current.y * dt;
+      // pos.z += deviceVel.current.z * dt;
+      // timeOfLastMotionEvent.current = currentTime;
+      // setP({x:pos.x, y:pos.y, z:pos.z})
     })
   }, []);
 
+  const serverGameState = useRef(new Subject<GameStateSerialized>());
+
   useEffect(() => {
     socket.on("gameState", (gameState: GameStateSerialized) => {
-      // console.log("clientPos:", gameCamRef.current.object3D.position);
-      // console.log("clientRot:", gameCamRef.current.object3D.rotation);
-      // console.log("server:", gameState.players.filter((p) => p.userId === props.userId));
+      serverGameState.current.next(gameState);
+    });
+  }, []);
+
+  useEffect(() => {
+    serverGameState.current.subscribe((gameState: GameStateSerialized) => {
 
       socket.emit("playerUpdate", {
         position: gameCamRef.current.object3D.position,
@@ -139,6 +148,27 @@ const Scene = (props: Props) => {
       
       // update all data
       gameState.players.forEach((player: PlayerSerialized) => {
+        if (player.fired) {
+          // they fired their gun this frame; draw beam representing their shot
+          const beam = document.createElement("a-entity");
+          const cyl = document.createElement("a-cylinder");
+          cyl.setAttribute("color", "cyan");
+          cyl.setAttribute("height", 100);
+          cyl.setAttribute("radius", 0.02);
+          cyl.object3D.position.z -= 50;
+          cyl.object3D.rotation.x -= Math.PI / 2;
+          if (player.userId === props.userId) {
+            // shoot the beam from slightly lower and farther forward for our POV so you can actually see the beam trail
+            cyl.object3D.position.y -= .15;
+            cyl.object3D.rotation.x += 3/1000;
+          }
+          beam.appendChild(cyl);
+          const playerRotation = player.userId === props.userId ? gameCamRef.current.object3D.rotation : entities.current.players.get(player.userId).object3D.rotation;
+          beam.object3D.rotation.copy(playerRotation);
+          beam.object3D.position.set(player.position.x, player.position.y, player.position.z);
+          graphicsRef.current.appendChild(beam);
+          beamGraphics.current.push(beam);
+        }
         if (player.userId === props.userId) {
           return; // let this player update itself based on phone movement
         }
@@ -151,7 +181,26 @@ const Scene = (props: Props) => {
       });
     })
   }, []);
-    
+
+  useEffect(() => {
+    serverGameState.current.subscribe((gameState: GameStateSerialized) => {
+      for (const beamEntity of beamGraphics.current) {
+        const beamCylinder = beamEntity.firstElementChild;
+        const beamMaterial = beamEntity.firstElementChild.getAttribute("material");
+        if (!beamMaterial) {
+          continue;
+        }
+        const oldOpacity = beamMaterial.opacity;
+        const newOpacity = oldOpacity - .04;
+        if (newOpacity <= 0) {
+          graphicsRef.current.removeChild(beamEntity);
+          beamGraphics.current = beamGraphics.current.filter(b => b !== beamEntity);
+        }
+        beamCylinder.setAttribute("material", "opacity", newOpacity);
+      }
+    })
+  }, [])
+  
   return (
     <>
       <div className="video-container">
@@ -163,10 +212,11 @@ const Scene = (props: Props) => {
         </a-assets>
         <a-camera ref={gameCamRef} camera="fov: 80;" id="camera" rotation-reader position="0 1.6 0" listener look-controls="reverseMouseDrag:true; touchEnabled: false">
           {/* HUD */}
-          <a-image src="#crosshair" position="0 0 -1" width=".2" height=".2"></a-image>
+          <a-image src="#crosshair" position="0 0 -.1" width=".02" height=".02" alpha-test="0.5"></a-image>
         </a-camera>
         <a-entity ref={enemiesRef} id="enemies"></a-entity>
         <a-entity ref={alliesRef} id="allies"></a-entity>
+        <a-entity ref={graphicsRef} id="graphics"></a-entity>
       </a-scene>
       {/* <div className="center-container">
         <img id="crosshair" src={crosshairImg} />

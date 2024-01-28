@@ -10,6 +10,7 @@ type PlayerSerialized = {
     y: number,
     z: number,
   };
+  fired: boolean;
 };
 
 export default PlayerSerialized;

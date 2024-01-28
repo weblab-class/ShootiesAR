@@ -7,7 +7,7 @@ import ClientState from "./ClientState";
 import UserData from "./UserData";
 import LobbySerialized from "./LobbySerialized";
 
-const FPS = 1;
+const FPS = 60;
 const LOBBY_TTL_SECONDS = 5; // a disconnected player has this amount of time to reconnect before getting kicked from the lobby they were in
 
 let io: Server;

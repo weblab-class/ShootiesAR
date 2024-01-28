@@ -30,6 +30,10 @@ export default class GameManager {
   
     GAME_CLOCK.subscribe(() => {
       this.gameState.next(this.serializeGameState());
+      // reset single-cycle events:
+      for (const player of this.players.values()) {
+        player.fired = false;
+      }
     });
   }
 
@@ -38,6 +42,7 @@ export default class GameManager {
     if (!player) {
       return;
     }
+    player.fired = true;
     // convert player direction euler coordinates to a normalized direction vector
     const pitch = player.rotation.x;
     const yaw = player.rotation.y;
@@ -49,7 +54,7 @@ export default class GameManager {
     
     // compute discriminant to check if there is an intersection
     for (const enemy of this.enemySpawner.enemies.value) {
-      const P_MINUS_C = player.position.sub(enemy.position);
+      const P_MINUS_C = player.position.clone().sub(enemy.position);
       const a: number = dir.dot(dir);
       const b: number = 2 * dir.dot(P_MINUS_C);
       const c: number = P_MINUS_C.dot(P_MINUS_C) - enemy.hitboxRadius;
@@ -89,6 +94,7 @@ export default class GameManager {
           y: player.rotation.y,
           z: player.rotation.z,
         },
+        fired: player.fired,
       });
     }
 
