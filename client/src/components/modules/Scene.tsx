@@ -110,13 +110,15 @@ const Scene = (props: Props) => {
   const serverGameState = useRef(new Subject<GameStateSerialized>());
 
   useEffect(() => {
-    socket.on("gameState", (gameState: GameStateSerialized) => {
+    const updateGameState = (gameState: GameStateSerialized) => {
       serverGameState.current.next(gameState);
-    });
+    };
+    socket.on("gameState", updateGameState);
+    return () => socket.off("gameState", updateGameState);
   }, []);
 
   useEffect(() => {
-    serverGameState.current.subscribe((gameState: GameStateSerialized) => {
+    const subscription = serverGameState.current.subscribe((gameState: GameStateSerialized) => {
 
       socket.emit("playerUpdate", {
         position: gameCamRef.current.object3D.position,
@@ -215,20 +217,13 @@ const Scene = (props: Props) => {
         const projectile = projectiles.current.get(proj.id);
         projectile.object3D.position.set(proj.position.x, proj.position.y, proj.position.z);
       });
-
-      for (const [id, player] of entities.current.players.entries()) {
-        console.log("according to server:", id, gameState.players.filter(p => p.userId === id).at(0)?.position)
-        if (player === null) {
-          console.log(id, gameCamRef.current.object3D.position);
-        } else {
-          console.log(id,player.object3D.position);
-        }
-      }
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    serverGameState.current.subscribe((gameState: GameStateSerialized) => {
+    const subscription = serverGameState.current.subscribe((gameState: GameStateSerialized) => {
       for (const beamEntity of beamGraphics.current) {
         const beamCylinder = beamEntity.firstElementChild;
         const beamMaterial = beamEntity.firstElementChild.getAttribute("material");
@@ -243,8 +238,10 @@ const Scene = (props: Props) => {
         }
         beamCylinder.setAttribute("material", "opacity", newOpacity);
       }
-    })
-  }, [])
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
   
   return (
     <>

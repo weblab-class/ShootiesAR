@@ -5,7 +5,7 @@ import { GAME_CLOCK } from "./server-socket";
 import LobbySerialized from "./LobbySerialized";
 
 export default class Lobby {
-  public readonly gameState: BehaviorSubject<GameStateSerialized | null>;
+  public gameManager: GameManager | null;
   
   public readonly code: string; // the code that a user can type in to join this room
   public readonly players: BehaviorSubject<string[]>; // user IDs
@@ -14,9 +14,7 @@ export default class Lobby {
   
   private static lobbyCounter = 0;
   
-  public gameManager: GameManager | null;
-
-  public get inGame() { return this.gameManager !== null };
+  public get gameState() { return this.gameManager ? this.gameManager.gameState.value : null };
 
   public constructor(maxPlayers = 99) {
     this.code = this.generateUniqueLobbyCode();
@@ -24,7 +22,6 @@ export default class Lobby {
     this.locked = false;
     this.maxPlayers = maxPlayers;
     this.gameManager = null;
-    this.gameState = new BehaviorSubject<GameStateSerialized | null>(null);
   }
 
   public join(userId: string) {
@@ -53,20 +50,18 @@ export default class Lobby {
     }
     this.locked = true;
     this.gameManager = new GameManager(this.players.value);
-    this.gameManager.gameState.subscribe((update) => {
-      this.gameState.next(update);
-    });
-    this.gameManager.gameOver.subscribe((isGameOver) => {
-      if (isGameOver) {
-        this.gameState.next(null);
-        this.gameManager?.gameState.unsubscribe();
-        this.gameManager?.gameOver.unsubscribe();
-      }
-    })
+    // this.gameManager.gameOver.subscribe((isGameOver) => {
+    //   if (isGameOver) {
+    //     this.gameState.next(null);
+    //     this.gameManager?.gameState.unsubscribe();
+    //     this.gameManager?.gameOver.unsubscribe();
+    //   }
+    // })
   }
 
   public finishGame() {
     // unsubscribe everything (in Lobby, GameManager, HazardSpawner, etc.)
+    this.gameManager?.finish()
     this.gameManager = null;
   }
 

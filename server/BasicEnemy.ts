@@ -15,6 +15,9 @@ export default class StationaryEnemy extends Enemy {
   update(dt: number): void {
     this.cooldownTimer -= dt;
     if (this.cooldownTimer < 0) {
+      if (this.spawner.projectiles.value.length > 100) {
+        return;
+      }
       // choose a player to target:
       const allPlayers = this.spawner.gameManager.players;
       const targetPlayer = Array.from(allPlayers.values())[Math.floor(Math.random() * allPlayers.size)];

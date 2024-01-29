@@ -94,22 +94,28 @@ const App = () => {
 
   useEffect(() => {
     switch (clientState) {
-      case ClientState.IN_GAME:
-        setDifferentPath("/game");
-        break;
-      case ClientState.IN_LOBBY_NOT_GAME:
-        setDifferentPath("/lobby");
+      case ClientState.UNKNOWN:
+        // todo: display loading screen
         break;
       case ClientState.NOT_IN_LOBBY:
         if (["/game", "/lobby"].includes(window.location.pathname)) {
           window.location.replace("/");
         }
         break;
-      case ClientState.UNKNOWN:
-        // todo: display loading screen
-        break;
+      case ClientState.IN_LOBBY:
+        // we will handle this separately (by reading the gameState value)
     }
-  });
+  }, [clientState]);
+
+  useEffect(() => {
+    socket.on("gameState", (gameState) => {
+      if (gameState) {
+        setDifferentPath("/game");
+      } else {
+        setDifferentPath("/lobby");
+      }
+    })
+  }, [])
 
   const addCoins = (coins: number) => {
     post("/api/giveCoins", {coins}).then((user) => {

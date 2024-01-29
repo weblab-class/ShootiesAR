@@ -3,7 +3,7 @@ import Player from "./Player";
 import HazardSpawner from "./HazardSpawner";
 import { GAME_CLOCK } from "./server-socket";
 import PlayerSerialized from "./PlayerSerialized";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Subscription } from "rxjs";
 import GameStateSerialized from "./GameStateSerialized";
 import EnemySerialized from "./EnemySerialized";
 import ProjectileSerialized from "./ProjectileSerialized";
@@ -15,12 +15,14 @@ export default class GameManager {
   public readonly gameOver: BehaviorSubject<boolean>;
   public readonly players: Map<string, Player>;
   private result: GameResult | null;
-  private readonly enemySpawner: HazardSpawner;
+  private readonly hazardSpawner: HazardSpawner;
+  private readonly subscriptions: Subscription[];
 
   constructor(players: string[]) {
-    this.enemySpawner = new HazardSpawner(this);
+    this.hazardSpawner = new HazardSpawner(this);
     this.gameOver = new BehaviorSubject<boolean>(false);
     this.result = null;
+    this.subscriptions = [];
 
     this.players = new Map<string, Player>();
     for (const playerId of players) {
@@ -30,37 +32,39 @@ export default class GameManager {
     this.gameState = new BehaviorSubject<GameStateSerialized>(this.serializeGameState());
 
     setTimeout(() => {
-      this.enemySpawner.startWave();
+      this.hazardSpawner.startWave();
     }, 0); // 10000
   
-    GAME_CLOCK.subscribe(() => {
+    // check for collisions between projectiles and player
+    this.subscriptions.push(GAME_CLOCK.subscribe(() => {
       for (const player of this.players.values()) {
-        for (const projectile of this.enemySpawner.projectiles.value) {
+        for (const projectile of this.hazardSpawner.projectiles.value) {
           if (projectile.position.distanceTo(player.position) < projectile.hurtboxRadius) {
             player.health.next(player.health.value - projectile.damage);
+            projectile.destroy()
           }
         }
       }
-    })
+    }));
 
-    // for (const player of this.players.values()) {
-    //   player.health.subscribe((hp) => {
-    //     if (hp <= 0 && this.result === null) {
-    //       this.result = {
-    //         wave: 69,
-    //         enemiesSlain: 420,
-    //       }
-    //     }
-    //   })
-    // }
+    for (const player of this.players.values()) {
+      this.subscriptions.push(player.health.subscribe((hp) => {
+        if (hp <= 0 && this.result === null) {
+          this.result = {
+            wave: 69,
+            enemiesSlain: 420,
+          }
+        }
+      }));
+    }
 
-    GAME_CLOCK.subscribe(() => {
+    this.subscriptions.push(GAME_CLOCK.subscribe(() => {
       this.gameState.next(this.serializeGameState());
       // reset single-cycle events:
       for (const player of this.players.values()) {
         player.fired = false;
       }
-    });
+    }));
   }
 
   public shoot(playerId: string) {
@@ -79,7 +83,7 @@ export default class GameManager {
     );
     
     // compute discriminant to check if there is a collision with any hazard
-    const hazards: Hazard[] = new Array<Hazard>().concat(this.enemySpawner.enemies.value).concat(this.enemySpawner.projectiles.value);
+    const hazards: Hazard[] = this.hazardSpawner.allHazards;
     let closestHazard: { hazard: Hazard | undefined, distance: number } = { hazard: undefined, distance: Number.MAX_VALUE };
     for (const hazard of hazards) {
       const P_MINUS_C = player.position.clone().sub(hazard.position);
@@ -113,6 +117,15 @@ export default class GameManager {
     player.rotation.y = playerData.rotation.y;
     player.rotation.z = playerData.rotation.z;
   }
+
+  public finish() {
+    for (const sub of this.subscriptions) {
+      sub.unsubscribe();
+    }
+    for (const hazard of this.hazardSpawner.allHazards) {
+      hazard.destroy();
+    }
+  }
   
   private serializeGameState(): GameStateSerialized  {
     const playersSerialized: PlayerSerialized[] = [];
@@ -134,7 +147,7 @@ export default class GameManager {
     }
 
     const enemiesSerialized: EnemySerialized[] = [];
-    for (const [id, enemy] of this.enemySpawner.enemies.value.entries()) {
+    for (const [id, enemy] of this.hazardSpawner.enemies.value.entries()) {
       enemiesSerialized.push({
         id: id,
         position: {
@@ -148,7 +161,7 @@ export default class GameManager {
     return {
       players: playersSerialized,
       enemies: enemiesSerialized,
-      projectiles: this.enemySpawner.projectiles.value.map(proj => proj.serializedData),
+      projectiles: this.hazardSpawner.projectiles.value.map(proj => proj.serializedData),
       result: this.result,
     };
   }

@@ -1,9 +1,10 @@
 import { Vector3 } from "three";
 import Enemy from "./Enemy";
-import { BehaviorSubject, Observable } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import Projectile from "./Projectile";
 import GameManager from "./GameManager";
 import StationaryEnemy from "./BasicEnemy";
+import Hazard from "./Hazard";
 
 const ENEMY_SPAWN_PERIOD_MS = 5000;
 
@@ -14,6 +15,8 @@ export default class HazardSpawner {
 
   public currentWave: number;
   public readonly waveOver = new BehaviorSubject<boolean>(true);
+
+  public get allHazards() { return new Array<Hazard>().concat(this.enemies.value).concat(this.projectiles.value); }
 
   public constructor(gameManager: GameManager) {
     this.currentWave = 0;

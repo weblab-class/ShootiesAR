@@ -12,16 +12,21 @@ type Props = RouteComponentProps & {
 };
 
 const Game = (props: Props) => {
-  const [gameOngoing, setGameOngoing] = useState(false);
+  const [gameOngoing, setGameOngoing] = useState(true);
   const result = useRef(null);
 
   console.log("re-rendering page (not good)")
 
   useEffect(() => {
-    socket.on("gameState", (gameState: GameStateSerialized) => {
+    const getGameResult = (gameState: GameStateSerialized) => {
+      if (!gameState) {
+        return; // App should be exiting us out of this page any moment now...
+      }
       result.current = gameState.result;
       setGameOngoing(gameState.result === null);
-    });
+    };
+    socket.on("gameState", getGameResult);
+    return () => socket.off("gameState", getGameResult);
   }, [])
 
   if (!props.userId) {
@@ -33,7 +38,7 @@ const Game = (props: Props) => {
   }
 
   return (
-    <Result result={result}></Result>
+    <Result result={result.current}></Result>
   );
 }
 

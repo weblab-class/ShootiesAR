@@ -7,7 +7,7 @@ import ClientState from "./ClientState";
 import UserData from "./UserData";
 import LobbySerialized from "./LobbySerialized";
 
-const FPS = 60;
+const FPS = 1;
 const LOBBY_TTL_SECONDS = 5; // a disconnected player has this amount of time to reconnect before getting kicked from the lobby they were in
 
 let io: Server;
@@ -16,14 +16,7 @@ const userIdToUserMap = new Map<string, UserData>(); // maps user ID to UserData
 const codeToLobbyMap = new Map<string, Lobby>(); // maps lobby code to Lobby object
 
 const getClientState = (user: UserData): ClientState => {
-  const lobby = user.lobby.value;
-  if (!lobby) {
-    return ClientState.NOT_IN_LOBBY;
-  }
-  if (lobby.inGame) {
-    return ClientState.IN_GAME;
-  }
-  return ClientState.IN_LOBBY_NOT_GAME;
+  return user.lobby.value ? ClientState.IN_LOBBY : ClientState.NOT_IN_LOBBY;
 }
 
 export const init = (server: http.Server): void => {
@@ -68,7 +61,7 @@ export const init = (server: http.Server): void => {
     
     socket.on("disconnecting", () => {
       // kick the player from their lobby iff they are not currently in a game and have not reconnected after LOBBY_TTL seconds
-      if (currentUser.lobby.value?.inGame) {
+      if (currentUser.lobby.value?.gameState) {
         setTimeout(() => {
           if (currentUser.socket.value === null) {
             currentUser.lobby.value?.leave(currentUser.userId);
@@ -82,17 +75,13 @@ export const init = (server: http.Server): void => {
     socket.on("createRoom", () => {
       const newLobby = new Lobby();
       codeToLobbyMap.set(newLobby.code, newLobby);
-      newLobby.join(currentUser.userId);
       socket.join(`lobby-${newLobby.code}`);
+      newLobby.join(currentUser.userId);
       currentUser.lobby.next(newLobby);
 
       newLobby.players.subscribe(() => {
         io.to(`lobby-${newLobby.code}`).emit("lobbyData", newLobby.getLobbyData());
       });
-
-      newLobby.gameState.subscribe((gameState) => {
-        io.to(`lobby-${newLobby.code}`).emit("clientState", gameState ? ClientState.IN_GAME : ClientState.IN_LOBBY_NOT_GAME)
-      })
 
       GAME_CLOCK.subscribe(() => {
         // if (newLobby.gameState.value) {
@@ -100,7 +89,7 @@ export const init = (server: http.Server): void => {
         //     console.log(player.userId, player.position.x, player.position.y, player.position.z)
         //   }
         // }
-        io.to(`lobby-${newLobby.code}`).emit("gameState", newLobby.gameState.value);
+        io.to(`lobby-${newLobby.code}`).emit("gameState", newLobby.gameState);
       });
     });
 

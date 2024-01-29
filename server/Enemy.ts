@@ -7,7 +7,7 @@ export default abstract class Enemy extends Hazard {
 
   }
 
-  protected destroy(): void {
+  public destroy(): void {
     this.spawner.despawnEnemy(this.id);
   }
 }
