@@ -9,7 +9,6 @@ export default class Lobby {
   
   public readonly code: string; // the code that a user can type in to join this room
   public readonly players: BehaviorSubject<string[]>; // user IDs
-  public locked: boolean; // whether players are allowed to join/leave still
   public maxPlayers: number; // max number of players allowed in the room
   
   private static lobbyCounter = 0;
@@ -19,14 +18,13 @@ export default class Lobby {
   public constructor(maxPlayers = 99) {
     this.code = this.generateUniqueLobbyCode();
     this.players = new BehaviorSubject<string[]>([]);
-    this.locked = false;
     this.maxPlayers = maxPlayers;
     this.gameManager = null;
   }
 
   public join(userId: string) {
-    if (this.locked) {
-      console.log("cannot join locked room");
+    if (this.gameManager) {
+      console.log("failed to join lobby");
     } else if (this.players.value.length < this.maxPlayers) {
       this.players.next(this.players.value.concat([userId]));
     } else {
@@ -35,8 +33,8 @@ export default class Lobby {
   }
 
   public leave(userId: string) {
-    if (this.locked) {
-      console.log("cannot leave locked room");
+    if (this.gameManager) {
+      console.log("failed to leave lobby");
     } else if (this.players.value.includes(userId)) {
       this.players.next(this.players.value.filter(id => id !== userId));
     } else {
@@ -48,15 +46,7 @@ export default class Lobby {
     if (this.gameManager) {
       return; // game was already started
     }
-    this.locked = true;
     this.gameManager = new GameManager(this.players.value);
-    // this.gameManager.gameOver.subscribe((isGameOver) => {
-    //   if (isGameOver) {
-    //     this.gameState.next(null);
-    //     this.gameManager?.gameState.unsubscribe();
-    //     this.gameManager?.gameOver.unsubscribe();
-    //   }
-    // })
   }
 
   public finishGame() {

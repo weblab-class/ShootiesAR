@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Router, useNavigate } from "@reach/router";
 import jwt_decode from "jwt-decode";
 import { CredentialResponse } from "@react-oauth/google";
@@ -31,9 +31,10 @@ const App = () => {
       .then((user: User) => {
         setGoogleUserId(user._id ? user._id : undefined);
         setLoggedIn(!!user._id);
+        if (!!user._id) {
+          addCoins(0); // get coin count
+        }
       });
-
-    addCoins(0); // get coin count
   }, []);
 
   socket.on("connect", () => setSocketConnected(true));
@@ -104,22 +105,37 @@ const App = () => {
         break;
       case ClientState.IN_LOBBY:
         // we will handle this separately (by reading the gameState value)
+        break;
     }
   }, [clientState]);
 
+  const [page, setPage] = useState("");
+
   useEffect(() => {
-    socket.on("gameState", (gameState) => {
+    const beOnCorrectPage = (gameState) => {
       if (gameState) {
-        setDifferentPath("/game");
+        setPage("/game");
       } else {
-        setDifferentPath("/lobby");
+        setPage("/lobby")
       }
-    })
+    };
+    socket.on("gameState", beOnCorrectPage);
+    return () => void socket.off("gameState", beOnCorrectPage);
   }, [])
+
+  useEffect(() => {
+    if (page === "/game") {
+      setDifferentPath("/game")
+    }
+    if (page === "/lobby") {
+      setDifferentPath("/lobby");
+    }
+    // otherwise do nothing
+  }, [page])
 
   const addCoins = (coins: number) => {
     post("/api/giveCoins", {coins}).then((user) => {
-      setCoins(user.coins);
+      setCoins(user?.coins ?? 0);
     });
   }
 
