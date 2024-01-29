@@ -4,7 +4,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Scene.css";
 import { socket } from "../../client-socket";
-import { PlayerSerialized, EnemySerialized, GameStateSerialized } from "../../../../shared/serialized";
+import { PlayerSerialized, EnemySerialized, GameStateSerialized, ProjectileSerialized } from "../../../../shared/serialized";
 import crosshairImg from "../../public/assets/crosshair.png";
 import { Subject } from "rxjs";
 
@@ -34,6 +34,7 @@ const Scene = (props: Props) => {
   const gameCamRef = useRef();
   const enemiesRef = useRef();
   const alliesRef = useRef();
+  const projectilesRef = useRef();
   const graphicsRef = useRef();
 
   const entities = useRef({
@@ -42,6 +43,7 @@ const Scene = (props: Props) => {
   });
   
   const beamGraphics = useRef(new Array<HTMLElement>());
+  const projectiles = useRef(new Map<number, HTMLElement>());
   
   const newPlayerElement = () => {
     const player = document.createElement("a-entity");
@@ -63,6 +65,16 @@ const Scene = (props: Props) => {
     enemy.appendChild(box1);
     
     return enemy;
+  }
+
+  const newProjectileElement = () => {
+    const proj = document.createElement("a-entity");
+    
+    const icos = document.createElement("a-icosahedron");
+    icos.setAttribute("color", "saddlebrown");
+    proj.appendChild(icos);
+    
+    return proj;
   }
   
   useEffect(() => {
@@ -138,13 +150,32 @@ const Scene = (props: Props) => {
           enemiesRef.current.appendChild(newEnemy);
         }
       });
-
+      
       for (const [enemyId, enemy] of entities.current.enemies.entries()) {
         if (!gameState.enemies.some(e => e.id === enemyId)) {
           entities.current.enemies.delete(enemyId);
           enemiesRef.current.removeChild(enemy);
         }
       }
+
+      gameState.projectiles.forEach((proj: ProjectileSerialized) => {
+        if (projectiles.current.has(proj.id)) {
+          return;
+        }
+        const newProj = newProjectileElement();
+        projectiles.current.set(proj.id, newProj);
+        newProj.setAttribute("position", proj.position);
+        newProj.setAttribute("radius", proj.radius);
+        projectilesRef.current.appendChild(newProj);
+      });
+
+      for (const [projId, proj] of projectiles.current.entries()) {
+        if (!gameState.projectiles.some(p => p.id === projId)) {
+          projectiles.current.delete(projId);
+          projectilesRef.current.removeChild(proj);
+        }
+      }
+
       
       // update all data
       gameState.players.forEach((player: PlayerSerialized) => {
@@ -179,7 +210,21 @@ const Scene = (props: Props) => {
       gameState.enemies.forEach(enemy => {
         entities.current.enemies.get(enemy.id).object3D.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
       });
-    })
+
+      gameState.projectiles.forEach(proj => {
+        const projectile = projectiles.current.get(proj.id);
+        projectile.object3D.position.set(proj.position.x, proj.position.y, proj.position.z);
+      });
+
+      for (const [id, player] of entities.current.players.entries()) {
+        console.log("according to server:", id, gameState.players.filter(p => p.userId === id).at(0)?.position)
+        if (player === null) {
+          console.log(id, gameCamRef.current.object3D.position);
+        } else {
+          console.log(id,player.object3D.position);
+        }
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -191,7 +236,7 @@ const Scene = (props: Props) => {
           continue;
         }
         const oldOpacity = beamMaterial.opacity;
-        const newOpacity = oldOpacity - .04;
+        const newOpacity = oldOpacity - .08;
         if (newOpacity <= 0) {
           graphicsRef.current.removeChild(beamEntity);
           beamGraphics.current = beamGraphics.current.filter(b => b !== beamEntity);
@@ -216,6 +261,7 @@ const Scene = (props: Props) => {
         </a-camera>
         <a-entity ref={enemiesRef} id="enemies"></a-entity>
         <a-entity ref={alliesRef} id="allies"></a-entity>
+        <a-entity ref={projectilesRef} id="projectiles"></a-entity>
         <a-entity ref={graphicsRef} id="graphics"></a-entity>
       </a-scene>
       {/* <div className="center-container">

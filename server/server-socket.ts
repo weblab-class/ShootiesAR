@@ -95,7 +95,11 @@ export const init = (server: http.Server): void => {
       })
 
       GAME_CLOCK.subscribe(() => {
-        // console.log(newLobby.gameState.value?.players)
+        // if (newLobby.gameState.value) {
+        //   for (const player of newLobby.gameState.value?.players) {
+        //     console.log(player.userId, player.position.x, player.position.y, player.position.z)
+        //   }
+        // }
         io.to(`lobby-${newLobby.code}`).emit("gameState", newLobby.gameState.value);
       });
     });
@@ -135,10 +139,19 @@ export const init = (server: http.Server): void => {
     socket.on("playerUpdate", (playerData: PlayerSerialized) => {
       currentUser.lobby.value?.gameManager?.playerUpdate(currentUser.userId, playerData);
     });
+
+    socket.on("finishGame", () => {
+      currentUser.lobby.value?.finishGame();
+    })
   });
 };
 
-export const GAME_CLOCK = interval(1000 / FPS).pipe(map(_ => null));
+/** ticks at regular intervals and gives the duration since the last tick (in seconds) */
+export const GAME_CLOCK = interval(1000 / FPS).pipe(
+  map(_ => (new Date()).getTime() / 1000),
+  pairwise(),
+  map(([prevTime, curTime]) => curTime - prevTime),
+);
 
 export default {
   init,

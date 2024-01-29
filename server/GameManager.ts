@@ -1,21 +1,26 @@
 import { Vector3 } from "three";
 import Player from "./Player";
-import EnemySpawner from "./EnemySpawner";
+import HazardSpawner from "./HazardSpawner";
 import { GAME_CLOCK } from "./server-socket";
 import PlayerSerialized from "./PlayerSerialized";
 import { BehaviorSubject } from "rxjs";
 import GameStateSerialized from "./GameStateSerialized";
 import EnemySerialized from "./EnemySerialized";
+import ProjectileSerialized from "./ProjectileSerialized";
+import Hazard from "./Hazard";
+import GameResult from "./GameResult";
 
 export default class GameManager {
   public readonly gameState: BehaviorSubject<GameStateSerialized>;
   public readonly gameOver: BehaviorSubject<boolean>;
-  private readonly players: Map<string, Player>;
-  private readonly enemySpawner: EnemySpawner;
+  public readonly players: Map<string, Player>;
+  private result: GameResult | null;
+  private readonly enemySpawner: HazardSpawner;
 
   constructor(players: string[]) {
-    this.enemySpawner = new EnemySpawner();
+    this.enemySpawner = new HazardSpawner(this);
     this.gameOver = new BehaviorSubject<boolean>(false);
+    this.result = null;
 
     this.players = new Map<string, Player>();
     for (const playerId of players) {
@@ -28,6 +33,27 @@ export default class GameManager {
       this.enemySpawner.startWave();
     }, 0); // 10000
   
+    GAME_CLOCK.subscribe(() => {
+      for (const player of this.players.values()) {
+        for (const projectile of this.enemySpawner.projectiles.value) {
+          if (projectile.position.distanceTo(player.position) < projectile.hurtboxRadius) {
+            player.health.next(player.health.value - projectile.damage);
+          }
+        }
+      }
+    })
+
+    // for (const player of this.players.values()) {
+    //   player.health.subscribe((hp) => {
+    //     if (hp <= 0 && this.result === null) {
+    //       this.result = {
+    //         wave: 69,
+    //         enemiesSlain: 420,
+    //       }
+    //     }
+    //   })
+    // }
+
     GAME_CLOCK.subscribe(() => {
       this.gameState.next(this.serializeGameState());
       // reset single-cycle events:
@@ -52,18 +78,30 @@ export default class GameManager {
       -Math.cos(yaw)*Math.cos(pitch),
     );
     
-    // compute discriminant to check if there is an intersection
-    for (const enemy of this.enemySpawner.enemies.value) {
-      const P_MINUS_C = player.position.clone().sub(enemy.position);
-      const a: number = dir.dot(dir);
-      const b: number = 2 * dir.dot(P_MINUS_C);
-      const c: number = P_MINUS_C.dot(P_MINUS_C) - enemy.hitboxRadius;
-      if (b*b - 4*a*c < 0) {
+    // compute discriminant to check if there is a collision with any hazard
+    const hazards: Hazard[] = new Array<Hazard>().concat(this.enemySpawner.enemies.value).concat(this.enemySpawner.projectiles.value);
+    let closestHazard: { hazard: Hazard | undefined, distance: number } = { hazard: undefined, distance: Number.MAX_VALUE };
+    for (const hazard of hazards) {
+      const P_MINUS_C = player.position.clone().sub(hazard.position);
+      const distance = P_MINUS_C.length()
+      if (distance >= closestHazard.distance) {
         continue;
       }
-      // todo: make sure enemy is in front of player
-      enemy.takeDamage(1);
+      const a: number = dir.dot(dir);
+      const b: number = 2 * dir.dot(P_MINUS_C);
+      const c: number = P_MINUS_C.dot(P_MINUS_C) - hazard.hurtboxRadius;
+      const discriminant = b*b - 4*a*c;
+      if (discriminant < 0) {
+        continue;
+      }
+      // make sure hazard is in front of player
+      if ((-b + Math.sqrt(discriminant)) / (2*a) <= 0 && (-b - Math.sqrt(discriminant)) / (2*a) <= 0) {
+        continue;
+      }
+      closestHazard = { distance, hazard };
     }
+
+    closestHazard.hazard?.takeDamage(1);
   }
 
   public playerUpdate(playerId: string, playerData: PlayerSerialized) {
@@ -71,9 +109,6 @@ export default class GameManager {
     if (!player) {
       return;
     }
-    player.position.x = playerData.position.x;
-    player.position.y = playerData.position.y;
-    player.position.z = playerData.position.z;
     player.rotation.x = playerData.rotation.x;
     player.rotation.y = playerData.rotation.y;
     player.rotation.z = playerData.rotation.z;
@@ -113,6 +148,8 @@ export default class GameManager {
     return {
       players: playersSerialized,
       enemies: enemiesSerialized,
+      projectiles: this.enemySpawner.projectiles.value.map(proj => proj.serializedData),
+      result: this.result,
     };
   }
 }

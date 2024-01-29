@@ -65,6 +65,11 @@ export default class Lobby {
     })
   }
 
+  public finishGame() {
+    // unsubscribe everything (in Lobby, GameManager, HazardSpawner, etc.)
+    this.gameManager = null;
+  }
+
   public getLobbyData(): LobbySerialized {
     return { players: this.players.value, code: this.code };
   }
