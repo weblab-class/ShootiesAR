@@ -1,5 +1,7 @@
 type PlayerSerialized = {
   userId: string;
+  health: number;
+  maxHealth: number;
   position: {
     x: number,
     y: number,

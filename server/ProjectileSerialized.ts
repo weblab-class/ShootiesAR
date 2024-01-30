@@ -1,6 +1,7 @@
 type ProjectileSerialized = {
   id: number;
   health: number;
+  maxHealth: number;
   radius: number;
   position: {
     x: number,

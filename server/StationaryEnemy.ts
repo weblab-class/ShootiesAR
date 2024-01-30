@@ -6,14 +6,22 @@ import { GAME_CLOCK } from "./server-socket";
 
 export default class StationaryEnemy extends Enemy {
   private cooldownTimer: number;
+  clock: number;
 
   constructor(params: HazardParams) {
     super(params);
     this.cooldownTimer = 5;
+    this.clock = 0;
   }
 
   update(dt: number): void {
     this.cooldownTimer -= dt;
+    this.clock += dt;
+    if (Math.floor(this.clock) % 2 == 0) {
+      this.position.add(new Vector3(5*dt, 0, 0))
+    } else {
+      this.position.add(new Vector3(-5*dt, 0, 0))
+    }
     if (this.cooldownTimer < 0) {
       if (this.spawner.projectiles.value.length > 100) {
         return;

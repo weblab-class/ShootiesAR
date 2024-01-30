@@ -79,7 +79,7 @@ webpack.config.js
 ```
 npm start
 npm run hotloader
-ngrok http --domain=enjoyed-sadly-kit.ngrok-free.app 5050 --host-header="localhost:5050"
+ngrok http --domain=initially-wealthy-drum.ngrok-free.app 5050 --host-header="localhost:5050"
 ```
 
 ## Asset Credits:

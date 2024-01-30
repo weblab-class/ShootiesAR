@@ -23,6 +23,7 @@ export default abstract class Projectile extends Hazard {
     return {
       id: this.id,
       health: this.health.value,
+      maxHealth: this.maxHealth,
       radius: this.hurtboxRadius,
       position: {
         x: this.position.x,

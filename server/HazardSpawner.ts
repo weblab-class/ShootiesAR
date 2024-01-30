@@ -3,7 +3,7 @@ import Enemy from "./Enemy";
 import { BehaviorSubject } from "rxjs";
 import Projectile from "./Projectile";
 import GameManager from "./GameManager";
-import StationaryEnemy from "./BasicEnemy";
+import StationaryEnemy from "./StationaryEnemy";
 import Hazard from "./Hazard";
 
 const ENEMY_SPAWN_PERIOD_MS = 5000;
@@ -30,7 +30,7 @@ export default class HazardSpawner {
     this.waveOver.next(false);
 
     setInterval(() => {
-      if (this.enemies.value.length < 100) {
+      if (this.enemies.value.length < 4) {
         this.spawnEnemy();
       }
     }, ENEMY_SPAWN_PERIOD_MS);
@@ -40,6 +40,7 @@ export default class HazardSpawner {
     const newEnemy = new StationaryEnemy({
       spawner: this,
       pos: new Vector3(10*Math.random()-5, 3*Math.random(), -10*Math.random()-10),
+      health: 10,
     });
     this.enemies.next(this.enemies.value.concat([newEnemy]));
     return newEnemy;

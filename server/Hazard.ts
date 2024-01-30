@@ -8,7 +8,8 @@ export default abstract class Hazard {
   public position: Vector3;
   public hurtboxRadius: number;
   public id: number;
-  public health: BehaviorSubject<number>;
+  public readonly health: BehaviorSubject<number>;
+  public readonly maxHealth: number;
 
   protected readonly spawner: HazardSpawner;
   protected readonly subscriptions: Subscription[];
@@ -21,6 +22,7 @@ export default abstract class Hazard {
     this.position = params.pos?.clone() ?? new Vector3();
     this.hurtboxRadius = params.radius ?? 2;
     this.health = new BehaviorSubject<number>(params.health ?? 1);
+    this.maxHealth = this.health.value;
     this.spawner = params.spawner;
     this.subscriptions = [];
 

@@ -26,7 +26,7 @@ export default class GameManager {
 
     this.players = new Map<string, Player>();
     for (const playerId of players) {
-      this.players.set(playerId, new Player(new Vector3(50*Math.random() - 25, 1.5, 0)));
+      this.players.set(playerId, new Player(new Vector3(20 - 40*Math.random(), 1.5, 0)));
     }
 
     this.gameState = new BehaviorSubject<GameStateSerialized>(this.serializeGameState());
@@ -132,6 +132,8 @@ export default class GameManager {
     for (const [id, player] of this.players.entries()) {
       playersSerialized.push({
         userId: id,
+        health: player.health.value,
+        maxHealth: player.maxHealth,
         position: {
           x: player.position.x,
           y: player.position.y,
@@ -150,6 +152,8 @@ export default class GameManager {
     for (const [id, enemy] of this.hazardSpawner.enemies.value.entries()) {
       enemiesSerialized.push({
         id: id,
+        health: enemy.health.value,
+        maxHealth: enemy.maxHealth,
         position: {
           x: enemy.position.x,
           y: enemy.position.y,

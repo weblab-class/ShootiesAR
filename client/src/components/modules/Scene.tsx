@@ -36,6 +36,7 @@ const Scene = (props: Props) => {
   const alliesRef = useRef();
   const projectilesRef = useRef();
   const graphicsRef = useRef();
+  const healthbarsRef = useRef();
 
   const entities = useRef({
     players: new Map<string, HTMLElement>(),
@@ -44,6 +45,7 @@ const Scene = (props: Props) => {
   
   const beamGraphics = useRef(new Array<HTMLElement>());
   const projectiles = useRef(new Map<number, HTMLElement>());
+  const healthBars = useRef(new Map<HTMLElement, { element: HTMLElement, setHealth: (cur: number, max: number) => void }>());
   
   const newPlayerElement = () => {
     const player = document.createElement("a-entity");
@@ -76,35 +78,34 @@ const Scene = (props: Props) => {
     
     return proj;
   }
+
+  const newHealthBar = (): { element: HTMLElement, setHealth: (cur: number, max: number) => void } => {
+    const element = document.createElement("a-entity");
+    const WIDTH = 2;
+    const HEIGHT = 0.5;
+
+    const backPlane = document.createElement("a-plane");
+    backPlane.setAttribute("height", HEIGHT * 1.05);
+    backPlane.setAttribute("width", WIDTH * 1.05);
+    backPlane.setAttribute("color", "black");
+    backPlane.object3D.position.z -= 0.05;
+    element.appendChild(backPlane);
+    
+    const frontPlane = document.createElement("a-plane");
+    frontPlane.setAttribute("height", HEIGHT);
+    frontPlane.setAttribute("width", WIDTH);
+    frontPlane.setAttribute("color", "red");
+    element.appendChild(frontPlane);
+    
+    const setHealth = (cur: number, max: number) => {
+      frontPlane.setAttribute("width", (cur / max) * WIDTH);
+    };
+
+    return { element, setHealth };
+  };
   
   useEffect(() => {
     document.addEventListener("click", () => socket.emit("shoot"));
-  }, []);
-
-  const deviceVel = useRef({x:0, y:0, z:0});
-  const timeOfLastMotionEvent = useRef(new Date());
-
-  const [p, setP] = useState({x:-1, y:0, z:0});
-  
-  useEffect(() => {
-    window.addEventListener("devicemotion", (event) => {
-      // update camera position based on detected phone acceleration
-      // const accel = event.acceleration;
-      // const pos = gameCamRef.current.object3D.position;
-      // const currentTime = new Date();
-      // const dt = (currentTime.getTime() - timeOfLastMotionEvent.current.getTime()) / 1000;
-      // if (accel.x*accel.x + accel.y*accel.y + accel.z*accel.z < .5) {
-      //     deviceVel.current = {x:0, y:0, z:0};
-      // }
-      // deviceVel.current.x += accel.x * dt;
-      // deviceVel.current.y += accel.y * dt;
-      // deviceVel.current.z += accel.z * dt;
-      // pos.x += deviceVel.current.x * dt;
-      // pos.y += deviceVel.current.y * dt;
-      // pos.z += deviceVel.current.z * dt;
-      // timeOfLastMotionEvent.current = currentTime;
-      // setP({x:pos.x, y:pos.y, z:pos.z})
-    })
   }, []);
 
   const serverGameState = useRef(new Subject<GameStateSerialized>());
@@ -121,7 +122,6 @@ const Scene = (props: Props) => {
     const subscription = serverGameState.current.subscribe((gameState: GameStateSerialized) => {
 
       socket.emit("playerUpdate", {
-        position: gameCamRef.current.object3D.position,
         rotation: {
           x: gameCamRef.current.object3D.rotation.x,
           y: gameCamRef.current.object3D.rotation.y,
@@ -129,7 +129,9 @@ const Scene = (props: Props) => {
         },
       });
       
+      // spawn and despawn entities to match the server gameState
       gameState.players.forEach((player: PlayerSerialized) => {
+        // spawn players
         if (!entities.current.players.has(player.userId)) {
           if (props.userId === player.userId) {
             gameCamRef.current.object3D.position.set(player.position.x, player.position.y, player.position.z);
@@ -145,22 +147,34 @@ const Scene = (props: Props) => {
       });
       
       gameState.enemies.forEach((enemy: EnemySerialized) => {
+        // spawn new enemies that have appeared this frame
         if (!entities.current.enemies.has(enemy.id)) {
           const newEnemy = newEnemyElement();
           entities.current.enemies.set(enemy.id, newEnemy);
-          newEnemy.setAttribute("position", enemy.position);
+          newEnemy.setAttribute("position", { x: enemy.position.x, y: enemy.position.y, z: enemy.position.z });
           enemiesRef.current.appendChild(newEnemy);
+
+          const healthBar = newHealthBar();
+          healthBars.current.set(enemy.id, healthBar);
+          healthBar.element.setAttribute("position", { x: enemy.position.x, y: enemy.position.y + 1, z: enemy.position.z });
+          healthbarsRef.current.appendChild(healthBar.element);
+          healthBar.setHealth(enemy.health, enemy.maxHealth);
         }
       });
       
-      for (const [enemyId, enemy] of entities.current.enemies.entries()) {
+      for (const [enemyId, enemy] of new Map(entities.current.enemies).entries()) {
+        // despawn enemies that have died since the last frame
         if (!gameState.enemies.some(e => e.id === enemyId)) {
           entities.current.enemies.delete(enemyId);
           enemiesRef.current.removeChild(enemy);
+
+          healthbarsRef.current.removeChild(healthBars.current.get(enemyId)?.element);
+          healthBars.current.delete(enemyId);
         }
       }
 
       gameState.projectiles.forEach((proj: ProjectileSerialized) => {
+        // spawn new projectiles that have appeared this frame
         if (projectiles.current.has(proj.id)) {
           return;
         }
@@ -169,12 +183,22 @@ const Scene = (props: Props) => {
         newProj.setAttribute("position", proj.position);
         newProj.setAttribute("radius", proj.radius);
         projectilesRef.current.appendChild(newProj);
+
+        const healthBar = newHealthBar();
+        healthBars.current.set(proj.id, healthBar);
+        healthBar.element.setAttribute("position", { x: proj.position.x, y: proj.position.y + 1, z: proj.position.z });
+        healthbarsRef.current.appendChild(healthBar.element);
+        healthBar.setHealth(proj.health, proj.maxHealth);
       });
 
       for (const [projId, proj] of projectiles.current.entries()) {
+        // despawn projectiles that have been destroyed since the last frame
         if (!gameState.projectiles.some(p => p.id === projId)) {
           projectiles.current.delete(projId);
           projectilesRef.current.removeChild(proj);
+
+          healthbarsRef.current.removeChild(healthBars.current.get(projId)?.element);
+          healthBars.current.delete(projId);
         }
       }
 
@@ -210,13 +234,23 @@ const Scene = (props: Props) => {
       });
       
       gameState.enemies.forEach(enemy => {
-        entities.current.enemies.get(enemy.id).object3D.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
+        const enemyElement = entities.current.enemies.get(enemy.id);
+        const enemyhp = healthBars.current.get(enemy.id);
+        enemyElement.object3D.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
+        enemyhp?.element.object3D.position.set(enemy.position.x, enemy.position.y + 1, enemy.position.z);
+        enemyhp?.element.object3D.rotation.copy(gameCamRef.current.object3D.rotation);
+        enemyhp.setHealth(enemy.health, enemy.maxHealth);
       });
-
+      
       gameState.projectiles.forEach(proj => {
         const projectile = projectiles.current.get(proj.id);
+        const projHp = healthBars.current.get(proj.id);
         projectile.object3D.position.set(proj.position.x, proj.position.y, proj.position.z);
+        projHp?.element.object3D.position.set(proj.position.x, proj.position.y + 1, proj.position.z)
+        projHp?.element.object3D.rotation.copy(gameCamRef.current.object3D.rotation);
+        projHp.setHealth(proj.health, proj.maxHealth);
       });
+
     });
 
     return () => subscription.unsubscribe();
@@ -260,11 +294,9 @@ const Scene = (props: Props) => {
         <a-entity ref={alliesRef} id="allies"></a-entity>
         <a-entity ref={projectilesRef} id="projectiles"></a-entity>
         <a-entity ref={graphicsRef} id="graphics"></a-entity>
+        <a-entity ref={healthbarsRef} id="healthbars"></a-entity>
+        {/* <a-plane position="0 0 -4" width="10" height="4" color="blue"></a-plane> */}
       </a-scene>
-      {/* <div className="center-container">
-        <img id="crosshair" src={crosshairImg} />
-        <p>{`dt: ${((new Date()).getTime() - timeOfLastMotionEvent.current.getTime())/1000} x: ${p.x.toPrecision(3)}\ny: ${p.y.toPrecision(3)}\nz: ${p.z.toPrecision(3)}`}</p>
-      </div> */}
     </>
   );
 }
