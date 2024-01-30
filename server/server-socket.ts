@@ -8,7 +8,6 @@ import UserData from "./UserData";
 import LobbySerialized from "./LobbySerialized";
 
 const FPS = 60;
-const LOBBY_TTL_SECONDS = 5; // a disconnected player has this amount of time to reconnect before getting kicked from the lobby they were in
 
 let io: Server;
 
@@ -30,6 +29,10 @@ export const init = (server: http.Server): void => {
     let currentUser: UserData = new UserData("");
 
     socket.on("setUserId", (userId: string) => {
+      if (currentUser.lobby.value) {
+        console.log("cannot change account when in lobby");
+        return;
+      }
       const user = userIdToUserMap.get(userId);
       if (user) {
         currentUser = user;
@@ -58,21 +61,14 @@ export const init = (server: http.Server): void => {
     socket.on("disconnect", () => {
       currentUser.socket.next(null);
     });
-    
-    socket.on("disconnecting", () => {
-      // kick the player from their lobby iff they are not currently in a game and have not reconnected after LOBBY_TTL seconds
-      if (currentUser.lobby.value?.gameState) {
-        setTimeout(() => {
-          if (currentUser.socket.value === null) {
-            currentUser.lobby.value?.leave(currentUser.userId);
-          }
-        }, LOBBY_TTL_SECONDS);
-      }
-    });
 
     ////////////////////// Lobby //////////////////////
 
     socket.on("createRoom", () => {
+      if (currentUser.lobby.value) {
+        console.log("cannot create room if you're already in one");
+        return;
+      }
       const newLobby = new Lobby();
       codeToLobbyMap.set(newLobby.code, newLobby);
       socket.join(`lobby-${newLobby.code}`);
@@ -84,16 +80,15 @@ export const init = (server: http.Server): void => {
       });
 
       GAME_CLOCK.subscribe(() => {
-        // if (newLobby.gameState.value) {
-        //   for (const player of newLobby.gameState.value?.players) {
-        //     console.log(player.userId, player.position.x, player.position.y, player.position.z)
-        //   }
-        // }
         io.to(`lobby-${newLobby.code}`).emit("gameState", newLobby.gameState);
       });
     });
 
     socket.on("joinRoom", (code: string) => {
+      if (currentUser.lobby.value) {
+        console.log("cannot join room if you're already in one");
+        return;
+      }
       const lobby = codeToLobbyMap.get(code);
       if (!lobby) {
         console.log("that code does not exist");

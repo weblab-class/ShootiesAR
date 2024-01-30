@@ -110,7 +110,7 @@ export default class GameManager {
 
   public playerUpdate(playerId: string, playerData: PlayerSerialized) {
     const player = this.players.get(playerId);
-    if (!player) {
+    if (!player || !playerData || !playerData.rotation) {
       return;
     }
     player.rotation.x = playerData.rotation.x;

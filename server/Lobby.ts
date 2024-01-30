@@ -50,7 +50,7 @@ export default class Lobby {
   }
 
   public finishGame() {
-    // unsubscribe everything (in Lobby, GameManager, HazardSpawner, etc.)
+    // unsubscribe and destroy everything in the current game
     this.gameManager?.finish()
     this.gameManager = null;
   }
