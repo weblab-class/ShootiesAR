@@ -15,8 +15,6 @@ const Game = (props: Props) => {
   const [gameOngoing, setGameOngoing] = useState(true);
   const result = useRef(null);
 
-  console.log("re-rendering page (not good)")
-
   useEffect(() => {
     const getGameResult = (gameState: GameStateSerialized) => {
       if (!gameState) {

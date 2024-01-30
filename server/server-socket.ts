@@ -1,11 +1,10 @@
 import type http from "http";
 import { Server, Socket } from "socket.io";
-import { BehaviorSubject, combineLatest, filter, interval, map, pairwise } from "rxjs";
+import { combineLatest, interval, map, pairwise } from "rxjs";
 import Lobby from "./Lobby";
 import PlayerSerialized from "./PlayerSerialized";
 import ClientState from "./ClientState";
 import UserData from "./UserData";
-import LobbySerialized from "./LobbySerialized";
 
 const FPS = 60;
 

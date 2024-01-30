@@ -17,8 +17,7 @@ import Shop from "./pages/Shop";
 const App = () => {
   const [loggedIn, setLoggedIn] = useState<boolean | undefined>(undefined); // undefined = still awaiting promise
   const [googleUserId, setGoogleUserId] = useState<string | undefined>(undefined);
-  const [storageUserId, setStorageUserId] = useState<string | undefined>(localStorage.getItem("id") ?? undefined);
-  const [trueUserId, setTrueUserId] = useState<string | undefined>(undefined); // the actual user id that the socket uses (combining storage data and google login)
+  const [storageUserId, setStorageUserId] = useState<string | undefined>(localStorage.getItem("id") ?? undefined); // the actual ID used for socket stuff
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
 
   const [clientState, setClientState] = useState<ClientState>(ClientState.UNKNOWN); // determines the page that should be loaded
@@ -41,34 +40,18 @@ const App = () => {
   socket.on("clientState", (cs: ClientState) => setClientState(cs));
 
   useEffect(() => {
-    if (storageUserId) {
-      localStorage.setItem("id", storageUserId);
+    if (!storageUserId) {
+      const newStorageId = crypto.randomUUID();
+      localStorage.setItem("id", newStorageId);
+      setStorageUserId(newStorageId);
     }
-  }, [storageUserId])
+  }, []);
 
   useEffect(() => {
-    // get appropriate id
-    if (loggedIn === undefined) {
-      setTrueUserId(undefined);
-      return;
+    if (socketConnected) {
+      socket.emit("setUserId", storageUserId);
     }
-    if (loggedIn) {
-      setTrueUserId(googleUserId);
-      return;
-    }
-    if (storageUserId) {
-      setTrueUserId(storageUserId);
-      return;
-    }
-    const newStorageId = crypto.randomUUID();
-    setStorageUserId(newStorageId);
-  }, [loggedIn, googleUserId, storageUserId]);
-
-  useEffect(() => {
-    if (socketConnected && trueUserId) {
-      socket.emit("setUserId", trueUserId);
-    }
-  }, [socketConnected, trueUserId]);
+  }, [socketConnected]);
 
   const handleLogin = (credentialResponse: CredentialResponse) => {
     const userToken = credentialResponse.credential;
@@ -144,8 +127,8 @@ const App = () => {
   return (
     <Router>
       <Home path="/" handleLogin={handleLogin} handleLogout={handleLogout} userId={googleUserId} />
-      <Lobby path="/lobby" userId={trueUserId} />
-      <Game path="/game" userId={trueUserId} />
+      <Lobby path="/lobby" userId={storageUserId} />
+      <Game path="/game" userId={storageUserId} />
       <Shop path="/shop" userId={googleUserId} coins={coins} addCoins={addCoins} />
       <NotFound default={true} />
     </Router>
