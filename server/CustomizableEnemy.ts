@@ -71,7 +71,7 @@ export default class CustomizableEnemy extends Enemy {
           spawner: this.spawner,
           direction: targetPlayer.position.clone().sub(this.position),
           speed: 5 * Math.sqrt(this.params.strength),
-          radius: .25 * Math.sqrt(this.params.strength),
+          radius: 2,
           health: .75 * this.params.strength ** .75,
           damage: 5 * this.params.strength,
           pos: this.position.clone(),

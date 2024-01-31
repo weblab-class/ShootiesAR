@@ -63,8 +63,9 @@ const Scene = (props: Props) => {
   const newEnemyElement = () => {
     const enemy = document.createElement("a-entity");
     
-    const box1 = document.createElement("a-box");
-    box1.setAttribute("color", "red");
+    const box1 = document.createElement("a-sphere");
+    box1.setAttribute("color", "gray");
+    box1.setAttribute("radius", 0.8);
     enemy.appendChild(box1);
     
     return enemy;

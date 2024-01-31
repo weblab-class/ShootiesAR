@@ -15,9 +15,7 @@ type Props = RouteComponentProps &  {
 const Shop = (props: Props) => {
   return (<>
     <h1>Shop</h1>
-    <Link to="/">
-      Return Home
-    </Link>
+    <button onClick={() => window.location.replace("/")}>Home</button>
     {!props.userId
       ? <p>You must be logged in to view shop</p>
       : <>
