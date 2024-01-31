@@ -18,8 +18,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Tektur&display=swap');
 
 :root {
-  --primary: #396dff;
-  --primary--dim: #6987db;
+  --darkpurple: #202060;
+  --medpurple: #602080;
+  --pink: #d25cd2;
+  --blue: #6c91bf;
+  --teal: #5bc8af;
   --darkgrey: #d4d4d4;
   --medgrey: #e0e0e0;
   --grey: #f7f7f7;
@@ -36,6 +39,8 @@ body {
   padding: 0;
   font-family: 'Tektur', sans-serif;
   font-weight: 300;
+  color: var(--teal);
+  background-color: var(--darkpurple);
 }
 
 form {

@@ -16,12 +16,12 @@ const Lobby = (props: Props) => {
 
   return (
     <>
+      <button onClick={() => socket.emit("leaveRoom")}>Leave Lobby</button>
       <h1>Lobby Code: {lobbyData?.code}</h1>
       <h2>Players in Lobby:</h2>
       <ol>
         {lobbyData?.players.map(player => <p>{player}</p>)}
       </ol>
-      <button onClick={() => socket.emit("leaveRoom")}>Leave Lobby</button>
       <button onClick={() => socket.emit("startGame")}>Start Game</button>
     </>
   )

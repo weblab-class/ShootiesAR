@@ -5,7 +5,7 @@ import {
   googleLogout,
   CredentialResponse,
 } from "@react-oauth/google";
-
+import "./Home.css";
 import { Link, RouteComponentProps } from "@reach/router";
 import { socket } from "../../client-socket";
 
@@ -23,44 +23,45 @@ const Home = (props: Props) => {
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <h1>Shooties</h1>
-      {props.userId ? (
-        <button
-          onClick={() => {
-            googleLogout();
-            handleLogout();
-          }}
-        >
-          Logout
-        </button>
-      ) : (
-        <GoogleLogin onSuccess={handleLogin} onError={() => console.log("Error Logging in")} />
-      )}
-      <br/>
-      <h2>Some notes about this...</h2>
-      <ul>
-        <li>This is an AR game meant for mobile devices only</li>
-        <li>Make sure your browser gives permissions to motion sensor data and the camera</li>
-        <li>I haven't programmed any game interaction yet, but as you look around you should see:
-          <ul>
-            <li>Your teammates nearby (the green cubes)</li>
-            <li>A new enemy spawning in every 5 seconds (the red cubes)</li>
-          </ul>
-        </li>
-        <li>There's no way yet to leave the game once started, so play on incognito mode if you don't want to be softlocked lol</li>
-        <li>The game is made to be played with or without being signed in</li>
-        <li>If signed in, the only difference is you will receive coins for winning games, which you can spend on the shop (not yet implemented)</li>
-      </ul>
-      <button onClick={() => socket.emit("createRoom")}>Create Lobby</button>
-      <p>or...</p>
-      <input
-        type="text"
-        value={lobbyCodeField}
-        onChange={(e) => setLobbyCodeField(e.target.value)}
-      />
-      <button onClick={() => socket.emit("joinRoom", lobbyCodeField)}>Join Lobby</button>
-      <br/>
-      <Link to="/shop">Shop</Link>
+      <div id="parent">
+        <h1 id="div1">Shooties</h1>
+        <div id="div2">
+          <button onClick={() => socket.emit("createRoom")}>Create Lobby</button>
+        </div>
+        <div id="div3">
+          <input
+            type="text"
+            value={lobbyCodeField}
+            placeholder="Enter Lobby Code"
+            onChange={(e) => setLobbyCodeField(e.target.value)}
+          />
+        </div>
+        <div id="div4">
+          <button onClick={() => socket.emit("joinRoom", lobbyCodeField)}>Join</button>
+        </div>
+        <div id="div5">
+          <button onClick={() => window.location.replace("/about")}>About</button>
+        </div>
+        <div id="div6">
+          {props.userId ? (
+            <button
+              onClick={() => {
+                googleLogout();
+                handleLogout();
+              }}
+            >
+              Logout
+            </button>
+          ) : (
+            <button>
+              <GoogleLogin onSuccess={handleLogin} onError={() => console.log("Error Logging in")} />
+            </button>
+          )}
+        </div>
+        <div id="div7">
+          <button onClick={() => window.location.replace("/shop")}>Shop</button>
+        </div>
+      </div>
     </GoogleOAuthProvider>
   );
 };

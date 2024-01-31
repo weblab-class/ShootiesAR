@@ -88,6 +88,7 @@ export const init = (server: http.Server): void => {
         console.log("cannot join room if you're already in one");
         return;
       }
+      code = code.toUpperCase().replace(/\s/g, ''); // sanitize code
       const lobby = codeToLobbyMap.get(code);
       if (!lobby) {
         console.log("that code does not exist");

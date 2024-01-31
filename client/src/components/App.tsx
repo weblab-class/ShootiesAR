@@ -7,6 +7,7 @@ import { get, post } from "../utilities";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
+import About from "./pages/About";
 import { socket } from "../client-socket";
 import User from "../../../shared/User";
 import "../utilities.css";
@@ -129,6 +130,7 @@ const App = () => {
       <Home path="/" handleLogin={handleLogin} handleLogout={handleLogout} userId={googleUserId} />
       <Lobby path="/lobby" userId={storageUserId} />
       <Game path="/game" userId={storageUserId} />
+      <About path="/about" />
       <Shop path="/shop" userId={googleUserId} coins={coins} addCoins={addCoins} />
       <NotFound default={true} />
     </Router>
