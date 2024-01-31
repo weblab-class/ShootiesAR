@@ -32,7 +32,7 @@ const Home = (props: Props) => {
           <input
             type="text"
             value={lobbyCodeField}
-            placeholder="Enter Lobby Code"
+            placeholder="Enter Lobby Code..."
             onChange={(e) => setLobbyCodeField(e.target.value)}
           />
         </div>

@@ -4,12 +4,18 @@ const UserSchema = new Schema({
   name: String,
   googleid: String,
   coins: Number,
+  health: Number,
+  damage: Number,
+  healing: Number,
 });
 
 export interface User extends Document {
   name: string;
   googleid: string;
   coins: number;
+  health: number;
+  damage: number;
+  healing: number;
   _id: string;
 }
 

@@ -1,10 +1,15 @@
 import { Link, RouteComponentProps } from "@reach/router";
 import React from "react";
+import "./Shop.css";
 
 type Props = RouteComponentProps &  {
   userId?: string;
   coins: number;
-  addCoins: (coins: number) => void;
+  health: number;
+  damage: number;
+  healing: number;
+  purchaseUpgrade: (upgrade: "health" | "damage" | "healing") => void;
+  addCoins: (amount: number) => void;
 }
 
 const Shop = (props: Props) => {
@@ -16,9 +21,29 @@ const Shop = (props: Props) => {
     {!props.userId
       ? <p>You must be logged in to view shop</p>
       : <>
-          <h2>Your coins: {props.coins}</h2>
-          <p>Shop isn't implemented yet, but for now you can add coins to your account by clicking this button:</p>
-          <button onClick={() => props.addCoins(1)}>Get Coin</button>
+          <button onClick={() => props.addCoins(1)}>Debug</button>
+          <h2>Your coins: {props.coins}¢</h2>
+          <h3>Stat Multipliers:</h3>
+          <div id="shop-parent">
+            <div id="s1">
+              <p>Health: {props.health.toFixed(2)}</p>
+            </div>
+            <div id="s2">
+              <button onClick={() => props.purchaseUpgrade("health")}>Upgrade (1¢)</button>
+            </div>
+            <div id="s3">
+              <p>Damage: {props.damage.toFixed(2)}</p>
+            </div>
+            <div id="s4">
+              <button onClick={() => props.purchaseUpgrade("damage")}>Upgrade (1¢)</button>
+            </div>
+            <div id="s5">
+              <p>Healing: {props.healing.toFixed(2)}</p>
+            </div>
+            <div id="s6">
+              <button onClick={() => props.purchaseUpgrade("healing")}>Upgrade (1¢)</button>
+            </div>
+          </div>
         </>}
   </>)
 }

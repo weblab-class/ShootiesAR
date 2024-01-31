@@ -24,6 +24,9 @@ const App = () => {
   const [clientState, setClientState] = useState<ClientState>(ClientState.UNKNOWN); // determines the page that should be loaded
 
   const [coins, setCoins] = useState<number>(0);
+  const [health, setHealth] = useState<number>(1);
+  const [damage, setDamage] = useState<number>(1);
+  const [healing, setHealing] = useState<number>(1);
 
   // page first load
   useEffect(() => {
@@ -120,8 +123,20 @@ const App = () => {
   const addCoins = (coins: number) => {
     post("/api/giveCoins", {coins}).then((user) => {
       setCoins(user?.coins ?? 0);
+      setHealth(user?.health ?? 1);
+      setDamage(user?.damage ?? 1);
+      setHealing(user?.healing ?? 1);
     });
-  }
+  };
+
+  const purchaseUpgrade = (upgrade: "health" | "damage" | "healing") => {
+    post("/api/upgrade", {upgrade}).then((user) => {
+      setCoins(user?.coins ?? 0);
+      setHealth(user?.health ?? 1);
+      setDamage(user?.damage ?? 1);
+      setHealing(user?.healing ?? 1);
+    });
+  };
 
   // NOTE:
   // All the pages need to have the props extended via RouteComponentProps for @reach/router to work properly. Please use the Skeleton as an example.
@@ -131,7 +146,7 @@ const App = () => {
       <Lobby path="/lobby" userId={storageUserId} />
       <Game path="/game" userId={storageUserId} />
       <About path="/about" />
-      <Shop path="/shop" userId={googleUserId} coins={coins} addCoins={addCoins} />
+      <Shop path="/shop" userId={googleUserId} addCoins={addCoins} purchaseUpgrade={purchaseUpgrade} coins={coins} health={health} damage={damage} healing={healing} />
       <NotFound default={true} />
     </Router>
   );

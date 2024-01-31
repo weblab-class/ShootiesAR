@@ -1,9 +1,9 @@
 #parent {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: 35fr repeat(2, 15fr) 20fr 15fr;
-  grid-column-gap: 16px;
-  grid-row-gap: 16px;
+  grid-template-rows: 35fr repeat(2, 15fr) 15fr 15fr;
+  column-gap: 16px;
+  row-gap: 16px;
   width: 80vw;
   height: 80vh;
   margin: auto;
