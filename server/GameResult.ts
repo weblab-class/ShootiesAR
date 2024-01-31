@@ -1,6 +1,6 @@
 type GameResult = {
+  id: number;
   wave: number;
-  enemiesSlain: number;
 };
 
 export default GameResult;

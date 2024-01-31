@@ -17,12 +17,16 @@ export default class GameManager {
   private result: GameResult | null;
   private readonly hazardSpawner: HazardSpawner;
   private readonly subscriptions: Subscription[];
+  private readonly id: number;
+
+  private static idCounter = 0;
 
   constructor(players: string[]) {
     this.hazardSpawner = new HazardSpawner(this);
     this.gameOver = new BehaviorSubject<boolean>(false);
     this.result = null;
     this.subscriptions = [];
+    this.id = GameManager.idCounter++;
 
     this.players = new Map<string, Player>();
     for (const playerId of players) {
@@ -52,8 +56,8 @@ export default class GameManager {
         if (hp <= 0 && this.result === null) {
           this.result = {
             wave: 69,
-            enemiesSlain: 420,
-          }
+            id: this.id,
+          };
         }
       }));
     }

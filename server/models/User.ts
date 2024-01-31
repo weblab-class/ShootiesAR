@@ -7,6 +7,7 @@ const UserSchema = new Schema({
   health: Number,
   damage: Number,
   healing: Number,
+  lastGameId: Number,
 });
 
 export interface User extends Document {
@@ -16,6 +17,7 @@ export interface User extends Document {
   health: number;
   damage: number;
   healing: number;
+  lastGameId: number;
   _id: string;
 }
 

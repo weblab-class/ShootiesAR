@@ -64,7 +64,6 @@ const App = () => {
     console.log(`Logged in as ${decodedCredential.name}`);
     post("/api/login", { token: userToken }).then((user) => {
       setGoogleUserId(user._id);
-      socket.emit("setUserId", googleUserId);
     });
   };
 
@@ -138,13 +137,19 @@ const App = () => {
     });
   };
 
+  const processGameOver = (gameId: number, coins: number) => {
+    post("/api/gameover", {gameId, coins}).then((user) => {
+      setCoins(user?.coins ?? 0);
+    })
+  }
+
   // NOTE:
   // All the pages need to have the props extended via RouteComponentProps for @reach/router to work properly. Please use the Skeleton as an example.
   return (
     <Router>
       <Home path="/" handleLogin={handleLogin} handleLogout={handleLogout} userId={googleUserId} />
       <Lobby path="/lobby" userId={storageUserId} />
-      <Game path="/game" userId={storageUserId} />
+      <Game path="/game" userId={storageUserId} googleUserId={googleUserId} processGameOver={processGameOver} />
       <About path="/about" />
       <Shop path="/shop" userId={googleUserId} addCoins={addCoins} purchaseUpgrade={purchaseUpgrade} coins={coins} health={health} damage={damage} healing={healing} />
       <NotFound default={true} />

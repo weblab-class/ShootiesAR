@@ -23,22 +23,21 @@ const Shop = (props: Props) => {
       : <>
           <button onClick={() => props.addCoins(1)}>Debug</button>
           <h2>Your coins: {props.coins}¢</h2>
-          <h3>Stat Multipliers:</h3>
           <div id="shop-parent">
             <div id="s1">
-              <p>Health: {props.health.toFixed(2)}</p>
+              <p>Health Multiplier: {props.health.toFixed(2)}x</p>
             </div>
             <div id="s2">
               <button onClick={() => props.purchaseUpgrade("health")}>Upgrade (1¢)</button>
             </div>
             <div id="s3">
-              <p>Damage: {props.damage.toFixed(2)}</p>
+              <p>Damage Multiplier: {props.damage.toFixed(2)}x</p>
             </div>
             <div id="s4">
               <button onClick={() => props.purchaseUpgrade("damage")}>Upgrade (1¢)</button>
             </div>
             <div id="s5">
-              <p>Healing: {props.healing.toFixed(2)}</p>
+              <p>Healing Multiplier: {props.healing.toFixed(2)}x</p>
             </div>
             <div id="s6">
               <button onClick={() => props.purchaseUpgrade("healing")}>Upgrade (1¢)</button>

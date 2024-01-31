@@ -9,6 +9,8 @@ import Result from "../modules/Result";
 
 type Props = RouteComponentProps & {
   userId?: string | undefined;
+  googleUserId?: string | undefined;
+  processGameOver: (gameId: number, coins: number) => void;
 };
 
 const Game = (props: Props) => {
@@ -36,7 +38,7 @@ const Game = (props: Props) => {
   }
 
   return (
-    <Result result={result.current}></Result>
+    <Result result={result.current} userId={props.googleUserId} processGameOver={props.processGameOver}></Result>
   );
 }
 

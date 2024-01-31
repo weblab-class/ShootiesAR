@@ -25,6 +25,7 @@ router.get("/whoami", (req, res) => {
 // | write your API methods below!|
 // |------------------------------|
 
+// req.body.coins
 router.post("/giveCoins", (req, res) => {
   if (!req.user) {
     // only give coins if user is logged in
@@ -40,6 +41,7 @@ router.post("/giveCoins", (req, res) => {
   })
 });
 
+// req.body.upgrade
 router.post("/upgrade", (req, res) => {
   if (!req.user) {
     // only process if user is logged in
@@ -66,7 +68,27 @@ router.post("/upgrade", (req, res) => {
       return;
     }
     user.save().then((user) => res.send(user));
-  })
+  });
+});
+
+// req.body.gameId, req.body.coins
+router.post("/gameover", (req, res) => {
+  if (!req.user) {
+    return;
+  }
+  User.findOne({_id: req.user._id}).then((user) => {
+    if (!user) {
+      // should not get here
+      return;
+    }
+    if (user.lastGameId >= req.body.gameId) {
+      // we have already processed the gameover for this game
+      return;
+    }
+    user.coins = user.coins + req.body.coins;
+    user.lastGameId = req.body.gameId;
+    user.save().then((user) => res.send(user));
+  });
 });
 
 // anything else falls to this "not found" case

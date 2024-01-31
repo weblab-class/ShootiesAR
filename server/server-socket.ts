@@ -88,7 +88,7 @@ export const init = (server: http.Server): void => {
         console.log("cannot join room if you're already in one");
         return;
       }
-      code = code.toUpperCase().replace(/\s/g, ''); // sanitize code
+      code = code.toUpperCase().replace(/\s/g, ''); // sanitize lobby code
       const lobby = codeToLobbyMap.get(code);
       if (!lobby) {
         console.log("that code does not exist");
@@ -100,7 +100,7 @@ export const init = (server: http.Server): void => {
       }
       socket.join(`lobby-${lobby.code}`);
       lobby.join(currentUser.userId);
-      currentUser.lobby.next(lobby);;
+      currentUser.lobby.next(lobby);
     });
 
     socket.on("leaveRoom", () => {
