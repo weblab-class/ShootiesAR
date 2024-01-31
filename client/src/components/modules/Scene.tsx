@@ -6,7 +6,7 @@ import "./Scene.css";
 import { socket } from "../../client-socket";
 import { PlayerSerialized, EnemySerialized, GameStateSerialized, ProjectileSerialized } from "../../../../shared/serialized";
 import crosshairImg from "../../public/assets/crosshair.png";
-import { Subject } from "rxjs";
+import { Subject, pairwise, map } from "rxjs";
 
 // we want to update our scene directly through the DOM, since React re-renders are much slower
 // so we want to minimize usage of props since they trigger re-renders
@@ -45,7 +45,8 @@ const Scene = (props: Props) => {
   
   const beamGraphics = useRef(new Array<HTMLElement>());
   const projectiles = useRef(new Map<number, HTMLElement>());
-  const healthBars = useRef(new Map<HTMLElement, { element: HTMLElement, setHealth: (cur: number, max: number) => void }>());
+  const healthBars = useRef(new Map<number | string, { element: HTMLElement, setHealth: (cur: number, max: number) => void }>());
+  const screenFlash = useRef<HTMLElement | null>(null);
   
   const newPlayerElement = () => {
     const player = document.createElement("a-entity");
@@ -79,7 +80,9 @@ const Scene = (props: Props) => {
     return proj;
   }
 
-  const newHealthBar = (): { element: HTMLElement, setHealth: (cur: number, max: number) => void } => {
+  const lerp = (a: number, b: number, t: number) => a + t * (b - a);
+
+  const newHealthBar = (enemy: bool): { element: HTMLElement, setHealth: (cur: number, max: number) => void } => {
     const element = document.createElement("a-entity");
     const WIDTH = 2;
     const HEIGHT = 0.5;
@@ -94,15 +97,22 @@ const Scene = (props: Props) => {
     const frontPlane = document.createElement("a-plane");
     frontPlane.setAttribute("height", HEIGHT);
     frontPlane.setAttribute("width", WIDTH);
-    frontPlane.setAttribute("color", "red");
+    frontPlane.setAttribute("color", enemy ? "red" : "#4caf50");
     element.appendChild(frontPlane);
     
+
     const setHealth = (cur: number, max: number) => {
       frontPlane.setAttribute("width", (cur / max) * WIDTH);
+      frontPlane.object3D.position.x = lerp(-WIDTH/2, 0, cur/max);
     };
 
     return { element, setHealth };
   };
+
+  const setPlayerHealth = (cur: number, max: number) => {
+    const healthBar = document.getElementById('health-bar');
+    healthBar.style.width = `${100 * cur / max}%`;
+  }
   
   useEffect(() => {
     document.addEventListener("click", () => socket.emit("shoot"));
@@ -134,8 +144,10 @@ const Scene = (props: Props) => {
         // spawn players
         if (!entities.current.players.has(player.userId)) {
           if (props.userId === player.userId) {
+            // we don't need to spawn ourself, just set the camera position
             gameCamRef.current.object3D.position.set(player.position.x, player.position.y, player.position.z);
             entities.current.players.set(player.userId, null);
+            setPlayerHealth(player.health, player.maxHealth);
             return;
           }
           const newPlayer = newPlayerElement();
@@ -143,6 +155,12 @@ const Scene = (props: Props) => {
           newPlayer.setAttribute("position", player.position);
           newPlayer.setAttribute("rotation", player.rotation);
           alliesRef.current.appendChild(newPlayer);
+
+          const healthBar = newHealthBar(false);
+          healthBars.current.set(player.userId, healthBar);
+          healthBar.element.setAttribute("position", { x: player.position.x, y: player.position.y + 1, z: player.position.z });
+          healthbarsRef.current.appendChild(healthBar.element);
+          healthBar.setHealth(player.health, player.maxHealth);
         }
       });
       
@@ -154,7 +172,7 @@ const Scene = (props: Props) => {
           newEnemy.setAttribute("position", { x: enemy.position.x, y: enemy.position.y, z: enemy.position.z });
           enemiesRef.current.appendChild(newEnemy);
 
-          const healthBar = newHealthBar();
+          const healthBar = newHealthBar(true);
           healthBars.current.set(enemy.id, healthBar);
           healthBar.element.setAttribute("position", { x: enemy.position.x, y: enemy.position.y + 1, z: enemy.position.z });
           healthbarsRef.current.appendChild(healthBar.element);
@@ -184,7 +202,7 @@ const Scene = (props: Props) => {
         newProj.setAttribute("radius", proj.radius);
         projectilesRef.current.appendChild(newProj);
 
-        const healthBar = newHealthBar();
+        const healthBar = newHealthBar(true);
         healthBars.current.set(proj.id, healthBar);
         healthBar.element.setAttribute("position", { x: proj.position.x, y: proj.position.y + 1, z: proj.position.z });
         healthbarsRef.current.appendChild(healthBar.element);
@@ -202,7 +220,6 @@ const Scene = (props: Props) => {
         }
       }
 
-      
       // update all data
       gameState.players.forEach((player: PlayerSerialized) => {
         if (player.fired) {
@@ -227,10 +244,16 @@ const Scene = (props: Props) => {
           beamGraphics.current.push(beam);
         }
         if (player.userId === props.userId) {
+          setPlayerHealth(player.health, player.maxHealth);
           return; // let this player update itself based on phone movement
         }
-        entities.current.players.get(player.userId).object3D.position.set(player.position.x, player.position.y, player.position.z);
-        entities.current.players.get(player.userId).object3D.rotation.set(player.rotation.x, player.rotation.y, player.rotation.z);
+        const playerElement = entities.current.players.get(player.userId);
+        const playerHp = healthBars.current.get(player.userId);
+        playerElement.object3D.position.set(player.position.x, player.position.y, player.position.z);
+        playerElement.object3D.rotation.set(player.rotation.x, player.rotation.y, player.rotation.z);
+        playerHp?.element.object3D.position.set(player.position.x, player.position.y + 1, player.position.z);
+        playerHp?.element.object3D.rotation.set(gameCamRef.current.object3D.rotation.x, gameCamRef.current.object3D.rotation.y, 0, "YXZ");
+        playerHp.setHealth(player.health, player.maxHealth);
       });
       
       gameState.enemies.forEach(enemy => {
@@ -238,7 +261,7 @@ const Scene = (props: Props) => {
         const enemyhp = healthBars.current.get(enemy.id);
         enemyElement.object3D.position.set(enemy.position.x, enemy.position.y, enemy.position.z);
         enemyhp?.element.object3D.position.set(enemy.position.x, enemy.position.y + 1, enemy.position.z);
-        enemyhp?.element.object3D.rotation.copy(gameCamRef.current.object3D.rotation);
+        enemyhp?.element.object3D.rotation.set(gameCamRef.current.object3D.rotation.x, gameCamRef.current.object3D.rotation.y, 0, "YXZ");
         enemyhp.setHealth(enemy.health, enemy.maxHealth);
       });
       
@@ -247,7 +270,7 @@ const Scene = (props: Props) => {
         const projHp = healthBars.current.get(proj.id);
         projectile.object3D.position.set(proj.position.x, proj.position.y, proj.position.z);
         projHp?.element.object3D.position.set(proj.position.x, proj.position.y + 1, proj.position.z)
-        projHp?.element.object3D.rotation.copy(gameCamRef.current.object3D.rotation);
+        projHp?.element.object3D.rotation.set(gameCamRef.current.object3D.rotation.x, gameCamRef.current.object3D.rotation.y, 0, "YXZ");
         projHp.setHealth(proj.health, proj.maxHealth);
       });
 
@@ -257,6 +280,7 @@ const Scene = (props: Props) => {
   }, []);
 
   useEffect(() => {
+    // make laser beam disappear over time
     const subscription = serverGameState.current.subscribe((gameState: GameStateSerialized) => {
       for (const beamEntity of beamGraphics.current) {
         const beamCylinder = beamEntity.firstElementChild;
@@ -269,6 +293,7 @@ const Scene = (props: Props) => {
         if (newOpacity <= 0) {
           graphicsRef.current.removeChild(beamEntity);
           beamGraphics.current = beamGraphics.current.filter(b => b !== beamEntity);
+          continue;
         }
         beamCylinder.setAttribute("material", "opacity", newOpacity);
       }
@@ -276,6 +301,54 @@ const Scene = (props: Props) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    // make screen flash red/green when taking damage/healing
+    const subscription = serverGameState.current.pipe(
+      map((state) => state.players.filter(p => p.userId === props.userId).at(0)?.health),
+      pairwise(),
+    ).subscribe(([prevHealth, curHealth]) => {
+      if (prevHealth === undefined || curHealth === undefined) {
+        return;
+      }
+      if (prevHealth !== curHealth) {
+        if (screenFlash.current) {
+          return; // don't do multiple flashes at the same time
+        }
+        const flash = document.createElement("a-circle");
+        flash.object3D.position.z -= .2
+        flash.setAttribute("material", "opacity", 1);
+        flash.setAttribute("color", curHealth < prevHealth ? "red" : "green")
+        gameCamRef.current.appendChild(flash);
+        screenFlash.current = flash;
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // make flash disappear over time
+    const subscription = serverGameState.current.subscribe((gameState: GameStateSerialized) => {
+      if (!screenFlash.current) {
+        return;
+      }
+      const flashMaterial = screenFlash.current.getAttribute("material");
+      if (!flashMaterial) {
+        return; // this check might not be needed
+      }
+      const oldOpacity = flashMaterial.opacity;
+      const newOpacity = oldOpacity - .1;
+      if (newOpacity <= 0) {
+        gameCamRef.current.removeChild(screenFlash.current);
+        screenFlash.current = null;
+      }
+      screenFlash.current?.setAttribute("material", "opacity", newOpacity);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   
   return (
     <>
@@ -295,8 +368,11 @@ const Scene = (props: Props) => {
         <a-entity ref={projectilesRef} id="projectiles"></a-entity>
         <a-entity ref={graphicsRef} id="graphics"></a-entity>
         <a-entity ref={healthbarsRef} id="healthbars"></a-entity>
-        {/* <a-plane position="0 0 -4" width="10" height="4" color="blue"></a-plane> */}
       </a-scene>
+      <div id="health-info" className="Scene-disable-select">Your health:</div>
+      <div id="health-bar-container">
+        <div id="health-bar"></div>
+      </div>
     </>
   );
 }

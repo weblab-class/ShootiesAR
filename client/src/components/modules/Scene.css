@@ -43,6 +43,45 @@
   height: 100px;
 }
 
+/* for healthbar */
+
+#health-info {
+  position: fixed;
+  bottom: 40px;
+  left: 10px;
+  color: white;
+  text-shadow: 
+    -1px -1px 0 #000,  
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000; /* Set the text shadow to create a black border */
+  font-size: 16px;
+}
+
+#health-bar-container {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  width: 200px;
+  height: 20px;
+  background-color: #ddd;
+  border: 1px solid #333;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+#health-bar {
+  height: 100%;
+  background-color: #4caf50;
+  transition: width 0.3s ease;
+}
+
+.Scene-disable-select {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
 /* the below hides annoying pause button on ios: 
   https://stackoverflow.com/questions/74631687/hide-play-button-overlay-on-html5-video-on-mobile */
 
