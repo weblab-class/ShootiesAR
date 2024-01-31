@@ -10,6 +10,10 @@ import ProjectileSerialized from "./ProjectileSerialized";
 import Hazard from "./Hazard";
 import GameResult from "./GameResult";
 
+const BASE_PLAYER_HEALTH = 10;
+const BASE_HEALING_AMOUNT = 1;
+const BASE_PLAYER_DAMAGE = 1;
+
 export default class GameManager {
   public readonly gameState: BehaviorSubject<GameStateSerialized>;
   public readonly gameOver: BehaviorSubject<boolean>;
@@ -21,7 +25,7 @@ export default class GameManager {
 
   private static idCounter = 0;
 
-  constructor(players: string[]) {
+  constructor(players: string[], playersToMultipliers: Map<string, { health: number, damage: number, healing: number }>) {
     this.hazardSpawner = new HazardSpawner(this);
     this.gameOver = new BehaviorSubject<boolean>(false);
     this.result = null;
@@ -30,7 +34,15 @@ export default class GameManager {
 
     this.players = new Map<string, Player>();
     for (const playerId of players) {
-      this.players.set(playerId, new Player(new Vector3(20 - 40*Math.random(), 1.5, 0)));
+      const multipliers = playersToMultipliers.get(playerId);
+      this.players.set(playerId, new Player({
+        position: new Vector3(20 - 40*Math.random(), 1.5, 0),
+        health: BASE_PLAYER_HEALTH * (multipliers?.health ?? 1),
+        healthScaling: multipliers?.health ?? 1,
+        damageScaling: multipliers?.damage ?? 1,
+        healingScaling: multipliers?.healing ?? 1,
+        hurtboxRadius: 2
+      }));
     }
 
     this.gameState = new BehaviorSubject<GameStateSerialized>(this.serializeGameState());
@@ -45,7 +57,7 @@ export default class GameManager {
         for (const projectile of this.hazardSpawner.projectiles.value) {
           if (projectile.position.distanceTo(player.position) < projectile.hurtboxRadius) {
             player.health.next(player.health.value - projectile.damage);
-            projectile.destroy()
+            projectile.destroy();
           }
         }
       }
@@ -109,7 +121,29 @@ export default class GameManager {
       closestHazard = { distance, hazard };
     }
 
-    closestHazard.hazard?.takeDamage(1);
+    if (closestHazard.hazard) {
+      closestHazard.hazard.takeDamage(player.damageScaling * BASE_PLAYER_DAMAGE);
+      return;
+    }
+
+    for (const [id, ally] of this.players.entries()) {
+      if (id === playerId) {
+        continue; // can't heal self
+      }
+      const P_MINUS_C = player.position.clone().sub(ally.position);
+      const a: number = dir.dot(dir);
+      const b: number = 2 * dir.dot(P_MINUS_C);
+      const c: number = P_MINUS_C.dot(P_MINUS_C) - ally.hurboxRadius;
+      const discriminant = b*b - 4*a*c;
+      if (discriminant < 0) {
+        continue;
+      }
+      // make sure ally is in front of player
+      if ((-b + Math.sqrt(discriminant)) / (2*a) <= 0 && (-b - Math.sqrt(discriminant)) / (2*a) <= 0) {
+        continue;
+      }
+      ally.health.next(Math.min(ally.health.value + player.healingScaling * BASE_HEALING_AMOUNT, player.maxHealth))
+    }
   }
 
   public playerUpdate(playerId: string, playerData: PlayerSerialized) {

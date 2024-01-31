@@ -147,7 +147,7 @@ const App = () => {
   // All the pages need to have the props extended via RouteComponentProps for @reach/router to work properly. Please use the Skeleton as an example.
   return (
     <Router>
-      <Home path="/" handleLogin={handleLogin} handleLogout={handleLogout} userId={googleUserId} />
+      <Home path="/" handleLogin={handleLogin} handleLogout={handleLogout} userId={googleUserId} health={health} damage={damage} healing={healing} />
       <Lobby path="/lobby" userId={storageUserId} />
       <Game path="/game" userId={storageUserId} googleUserId={googleUserId} processGameOver={processGameOver} />
       <About path="/about" />

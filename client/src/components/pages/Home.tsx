@@ -16,6 +16,9 @@ type Props = RouteComponentProps & {
   userId?: string;
   handleLogin: (credentialResponse: CredentialResponse) => void;
   handleLogout: () => void;
+  health: number;
+  damage: number;
+  healing: number;
 };
 const Home = (props: Props) => {
   const { handleLogin, handleLogout } = props;
@@ -26,7 +29,7 @@ const Home = (props: Props) => {
       <div id="parent">
         <h1 id="div1">Shooties</h1>
         <div id="div2">
-          <button onClick={() => socket.emit("createRoom")}>Create Lobby</button>
+          <button onClick={() => socket.emit("createRoom", { health: props.health, damage: props.damage, healing: props.healing })}>Create Lobby</button>
         </div>
         <div id="div3">
           <input
@@ -37,7 +40,7 @@ const Home = (props: Props) => {
           />
         </div>
         <div id="div4">
-          <button onClick={() => socket.emit("joinRoom", lobbyCodeField)}>Join</button>
+          <button onClick={() => socket.emit("joinRoom", lobbyCodeField, { health: props.health, damage: props.damage, healing: props.healing })}>Join</button>
         </div>
         <div id="div5">
           <button onClick={() => window.location.replace("/about")}>About</button>

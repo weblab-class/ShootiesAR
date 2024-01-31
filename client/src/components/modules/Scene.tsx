@@ -112,6 +112,7 @@ const Scene = (props: Props) => {
   const setPlayerHealth = (cur: number, max: number) => {
     const healthBar = document.getElementById('health-bar');
     healthBar.style.width = `${100 * cur / max}%`;
+    document.getElementById("health-info")?.innerText = `Your Health: ${cur.toFixed(1)}`;
   }
   
   useEffect(() => {

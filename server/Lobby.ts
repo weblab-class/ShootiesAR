@@ -9,6 +9,7 @@ export default class Lobby {
   
   public readonly code: string; // the code that a user can type in to join this room
   public readonly players: BehaviorSubject<string[]>; // user IDs
+  public readonly playersToMultipliers = new Map<string, { health: number, damage: number, healing: number }>();
   public maxPlayers: number; // max number of players allowed in the room
   
   private static lobbyCounter = 0;
@@ -22,10 +23,11 @@ export default class Lobby {
     this.gameManager = null;
   }
 
-  public join(userId: string) {
+  public join(userId: string, stats: { health: number, damage: number, healing: number }) {
     if (this.gameManager) {
       console.log("failed to join lobby");
     } else if (this.players.value.length < this.maxPlayers) {
+      this.playersToMultipliers.set(userId, { health: stats.health ?? 1, damage: stats.damage ?? 1, healing: stats.healing ?? 1});
       this.players.next(this.players.value.concat([userId]));
     } else {
       console.log(`Cannot exceed maxPlayer limit of ${this.maxPlayers}`);
@@ -36,6 +38,7 @@ export default class Lobby {
     if (this.gameManager) {
       console.log("failed to leave lobby");
     } else if (this.players.value.includes(userId)) {
+      this.playersToMultipliers.delete(userId);
       this.players.next(this.players.value.filter(id => id !== userId));
     } else {
       console.log(`UserId ${userId} not found in player list ${this.players}`);
@@ -46,7 +49,7 @@ export default class Lobby {
     if (this.gameManager) {
       return; // game was already started
     }
-    this.gameManager = new GameManager(this.players.value);
+    this.gameManager = new GameManager(this.players.value, this.playersToMultipliers);
   }
 
   public finishGame() {

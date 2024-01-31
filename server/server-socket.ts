@@ -63,7 +63,7 @@ export const init = (server: http.Server): void => {
 
     ////////////////////// Lobby //////////////////////
 
-    socket.on("createRoom", () => {
+    socket.on("createRoom", (stats: { health: number, damage: number, healing: number }) => {
       if (currentUser.lobby.value) {
         console.log("cannot create room if you're already in one");
         return;
@@ -71,7 +71,7 @@ export const init = (server: http.Server): void => {
       const newLobby = new Lobby();
       codeToLobbyMap.set(newLobby.code, newLobby);
       socket.join(`lobby-${newLobby.code}`);
-      newLobby.join(currentUser.userId);
+      newLobby.join(currentUser.userId, stats);
       currentUser.lobby.next(newLobby);
 
       newLobby.players.subscribe(() => {
@@ -83,7 +83,7 @@ export const init = (server: http.Server): void => {
       });
     });
 
-    socket.on("joinRoom", (code: string) => {
+    socket.on("joinRoom", (code: string, stats: { health: number, damage: number, healing: number }) => {
       if (currentUser.lobby.value) {
         console.log("cannot join room if you're already in one");
         return;
@@ -99,7 +99,7 @@ export const init = (server: http.Server): void => {
         return;
       }
       socket.join(`lobby-${lobby.code}`);
-      lobby.join(currentUser.userId);
+      lobby.join(currentUser.userId, stats);
       currentUser.lobby.next(lobby);
     });
 

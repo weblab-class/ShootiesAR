@@ -52,17 +52,17 @@ router.post("/upgrade", (req, res) => {
       // should not get here
       return;
     }
-    if (user.coins <= 0) {
-      // user has no money
+    if (user.coins < 5) {
+      // user can't afford upgrade
       return;
     }
-    user.coins = user.coins - 1;
+    user.coins = user.coins - 5;
     if (req.body.upgrade === "health") {
-      user.health = user.health + 0.01;
+      user.health = user.health + 0.1;
     } else if (req.body.upgrade === "damage") {
-      user.damage = user.damage + 0.01;
+      user.damage = user.damage + 0.1;
     } else if (req.body.upgrade === "healing") {
-      user.healing = user.healing + 0.01;
+      user.healing = user.healing + 0.1;
     } else {
       // invalid upgrade type
       return;

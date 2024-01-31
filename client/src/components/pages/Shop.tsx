@@ -21,26 +21,25 @@ const Shop = (props: Props) => {
     {!props.userId
       ? <p>You must be logged in to view shop</p>
       : <>
-          <button onClick={() => props.addCoins(1)}>Debug</button>
           <h2>Your coins: {props.coins}¢</h2>
           <div id="shop-parent">
             <div id="s1">
-              <p>Health Multiplier: {props.health.toFixed(2)}x</p>
+              <p>Health Multiplier: {props.health.toFixed(1)}x</p>
             </div>
             <div id="s2">
-              <button onClick={() => props.purchaseUpgrade("health")}>Upgrade (1¢)</button>
+              <button onClick={() => props.purchaseUpgrade("health")}>Upgrade (5¢)</button>
             </div>
             <div id="s3">
-              <p>Damage Multiplier: {props.damage.toFixed(2)}x</p>
+              <p>Damage Multiplier: {props.damage.toFixed(1)}x</p>
             </div>
             <div id="s4">
-              <button onClick={() => props.purchaseUpgrade("damage")}>Upgrade (1¢)</button>
+              <button onClick={() => props.purchaseUpgrade("damage")}>Upgrade (5¢)</button>
             </div>
             <div id="s5">
-              <p>Healing Multiplier: {props.healing.toFixed(2)}x</p>
+              <p>Healing Multiplier: {props.healing.toFixed(1)}x</p>
             </div>
             <div id="s6">
-              <button onClick={() => props.purchaseUpgrade("healing")}>Upgrade (1¢)</button>
+              <button onClick={() => props.purchaseUpgrade("healing")}>Upgrade (5¢)</button>
             </div>
           </div>
         </>}
