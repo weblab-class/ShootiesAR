@@ -27,7 +27,7 @@ const Result = (props: Props) => {
     <>
       <h1>Game Over</h1>
       <h2>You made it until wave {props.result.wave}</h2>
-      {props.userId && <h2>{props.result.wave} coins were added to your account!</h2>}
+      {props.userId ? <h2>{props.result.wave} coins were added to your account!</h2> : <h2>Sign in to earn coins for completing games.</h2>}
       {showButton && <button onClick={() => socket.emit("finishGame")}>Finish</button>}
     </>
   )

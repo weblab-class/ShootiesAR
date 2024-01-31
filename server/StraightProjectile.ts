@@ -17,16 +17,12 @@ export default class StraightProjectile extends Projectile {
   constructor(params: StraightProjectileParams) {
     super(params);
     this.direction = params.direction.clone().normalize();
+    this.damage = params.damage
     this.speed = params.speed;
   }
 
   protected update(dt: number): void {
-    // console.log("pos before:", debug(this.position));
-    // console.log("direction: ", debug(this.direction));
-    // console.log("speed: ", this.speed);
-    // console.log("dt: ", dt);
     this.position.add(this.direction.clone().multiplyScalar(this.speed * dt));
-    // console.log("pos after:", debug(this.position));
   }
 }
 

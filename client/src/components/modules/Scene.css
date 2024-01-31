@@ -82,6 +82,16 @@
   user-select: none; /* Standard syntax */
 }
 
+/* wave number */
+#top-left-text {
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 10px;
+  background-color: #333;
+  color: #fff;
+}
+
 /* the below hides annoying pause button on ios: 
   https://stackoverflow.com/questions/74631687/hide-play-button-overlay-on-html5-video-on-mobile */
 

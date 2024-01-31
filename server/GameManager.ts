@@ -10,9 +10,11 @@ import ProjectileSerialized from "./ProjectileSerialized";
 import Hazard from "./Hazard";
 import GameResult from "./GameResult";
 
-const BASE_PLAYER_HEALTH = 10;
+const BASE_PLAYER_HEALTH = 100;
 const BASE_HEALING_AMOUNT = 1;
 const BASE_PLAYER_DAMAGE = 1;
+
+const PLAYER_CIRCLE_RADIUS = 5;
 
 export default class GameManager {
   public readonly gameState: BehaviorSubject<GameStateSerialized>;
@@ -33,10 +35,19 @@ export default class GameManager {
     this.id = GameManager.idCounter++;
 
     this.players = new Map<string, Player>();
+    
+    let p = 0;
     for (const playerId of players) {
+      // compute coordinates of player within circle
+      const angle = (p / players.length) * 2 * Math.PI;
+      const x = PLAYER_CIRCLE_RADIUS * Math.cos(angle);
+      const z = PLAYER_CIRCLE_RADIUS * Math.sin(angle);
+      p++;
+  
       const multipliers = playersToMultipliers.get(playerId);
+      console.log(`player: ${playerId}, x: ${x}, y: ${0}, z: ${z}`)
       this.players.set(playerId, new Player({
-        position: new Vector3(20 - 40*Math.random(), 1.5, 0),
+        position: new Vector3(x, 0, z),
         health: BASE_PLAYER_HEALTH * (multipliers?.health ?? 1),
         healthScaling: multipliers?.health ?? 1,
         damageScaling: multipliers?.damage ?? 1,
@@ -48,7 +59,7 @@ export default class GameManager {
     this.gameState = new BehaviorSubject<GameStateSerialized>(this.serializeGameState());
 
     setTimeout(() => {
-      this.hazardSpawner.startWave();
+      this.hazardSpawner.startSpawning();
     }, 0); // 10000
   
     // check for collisions between projectiles and player
@@ -67,7 +78,7 @@ export default class GameManager {
       this.subscriptions.push(player.health.subscribe((hp) => {
         if (hp <= 0 && this.result === null) {
           this.result = {
-            wave: 69,
+            wave: this.hazardSpawner.currentWave,
             id: this.id,
           };
         }
@@ -163,6 +174,7 @@ export default class GameManager {
     for (const hazard of this.hazardSpawner.allHazards) {
       hazard.destroy();
     }
+    this.hazardSpawner.finish();
   }
   
   private serializeGameState(): GameStateSerialized  {
@@ -205,6 +217,7 @@ export default class GameManager {
       enemies: enemiesSerialized,
       projectiles: this.hazardSpawner.projectiles.value.map(proj => proj.serializedData),
       result: this.result,
+      wave: this.hazardSpawner.currentWave,
     };
   }
 }

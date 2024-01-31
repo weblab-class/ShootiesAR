@@ -112,7 +112,7 @@ const Scene = (props: Props) => {
   const setPlayerHealth = (cur: number, max: number) => {
     const healthBar = document.getElementById('health-bar');
     healthBar.style.width = `${100 * cur / max}%`;
-    document.getElementById("health-info")?.innerText = `Your Health: ${cur.toFixed(1)}`;
+    document.getElementById("health-info")?.innerText = `Your Health: ${Math.ceil(cur)}`;
   }
   
   useEffect(() => {
@@ -131,6 +131,7 @@ const Scene = (props: Props) => {
 
   useEffect(() => {
     const subscription = serverGameState.current.subscribe((gameState: GameStateSerialized) => {
+      document.getElementById("top-left-text")?.innerText = `Wave: ${gameState.wave}`;
 
       socket.emit("playerUpdate", {
         rotation: {
@@ -370,6 +371,7 @@ const Scene = (props: Props) => {
         <a-entity ref={graphicsRef} id="graphics"></a-entity>
         <a-entity ref={healthbarsRef} id="healthbars"></a-entity>
       </a-scene>
+      <div id="top-left-text">Wave:</div>
       <div id="health-info" className="Scene-disable-select">Your health:</div>
       <div id="health-bar-container">
         <div id="health-bar"></div>

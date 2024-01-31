@@ -7,6 +7,7 @@ type GameStateSerialized = {
   players: PlayerSerialized[];
   enemies: EnemySerialized[];
   projectiles: ProjectileSerialized[];
+  wave: number;
   result: GameResult | null;
 };
 
