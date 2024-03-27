@@ -21,6 +21,7 @@ export default class CustomizableEnemy extends Enemy {
   private params: EnemyParams;
   private state: "move" | "pause";
   private actionTimer: number;
+  private moveInPositiveDirection: boolean;
 
   constructor(params: EnemyParams) {
     super(params);
@@ -29,6 +30,7 @@ export default class CustomizableEnemy extends Enemy {
     this.params = params;
     this.state = "move";
     this.actionTimer = params.oscillationMoveDuration / 2;
+    this.moveInPositiveDirection = Math.random() < .5; // start facing either forwards or backwards, randomly
     switch (params.oscillationDirection) {
       case "horizontal":
         this.direction = new Vector3(-this.position.z, 0, this.position.x).normalize();
@@ -49,8 +51,9 @@ export default class CustomizableEnemy extends Enemy {
     this.shootingTimer -= dt;
     this.actionTimer += dt;
     if (this.state === "move") {
-      this.position.add(this.direction.multiplyScalar(this.params.speed * dt));
+      this.position.add(this.direction.clone().multiplyScalar(this.params.speed * dt * (this.moveInPositiveDirection ? 1 : -1)));
       if (this.actionTimer > this.params.oscillationMoveDuration) {
+        this.moveInPositiveDirection = !this.moveInPositiveDirection;
         this.state = "pause";
         this.actionTimer = 0;
       }
